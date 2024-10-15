@@ -10,8 +10,8 @@ import typing
 import ops
 from pydantic import ConfigDict, Field, validator
 
-from paas_app_charmer._gunicorn.charm import GunicornBase
-from paas_app_charmer.framework import FrameworkConfig
+from paas_charm._gunicorn.charm import GunicornBase
+from paas_charm.framework import FrameworkConfig
 
 logger = logging.getLogger(__name__)
 
