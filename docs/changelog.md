@@ -15,6 +15,7 @@ Place any unreleased changes here, that are subject to release in coming version
   configuration changes.
 * fix: Ensure Prometheus scraping information refreshes correctly on 
   configuration changes.
+* docs: Updated README and contributing guide. Added links to Charmcraft and Rockcraft.
 
 ## v1.5.1 - 2025-04-24
 
