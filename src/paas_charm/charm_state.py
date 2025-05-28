@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Type, TypeVar
 
-from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from pydantic import (
     BaseModel,
     Field,
@@ -20,7 +19,7 @@ from pydantic import (
     field_validator,
 )
 
-from paas_charm.databases import get_uri
+from paas_charm.databases import PaaSDatabaseRelationData, PaaSDatabaseRequires
 from paas_charm.exceptions import CharmConfigInvalidError
 from paas_charm.rabbitmq import RabbitMQRequires
 from paas_charm.redis import PaaSRedisRelationData, PaaSRedisRequires
@@ -28,7 +27,7 @@ from paas_charm.secret_storage import KeySecretStorage
 from paas_charm.utils import build_validation_error_message, config_metadata
 
 if typing.TYPE_CHECKING:
-    from paas_charm.rabbitmq import RabbitMQRelationData
+    from paas_charm.rabbitmq import PaaSRabbitMQRelationData
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ try:
     # the import is used for type hinting
     # pylint: disable=ungrouped-imports
     # pylint: disable=unused-import
-    from paas_charm.s3 import InvalidS3RelationDataError, PaaSS3Requirer, S3RelationData
+    from paas_charm.s3 import InvalidS3RelationDataError, PaaSS3RelationData, PaaSS3Requirer
 except ImportError:
     # we already logged it in charm.py
     pass
@@ -58,7 +57,7 @@ try:
     # the import is used for type hinting
     # pylint: disable=ungrouped-imports
     # pylint: disable=unused-import
-    from paas_charm.tempo import PaaSTracingEndpointRequirer, TempoRelationData
+    from paas_charm.tempo import PaaSTempoRelationData, PaaSTracingEndpointRequirer
 except ImportError:
     # we already logged it in charm.py
     pass
@@ -181,7 +180,11 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                     if integration_requirers.redis
                     else None
                 ),
-                database_requirers=integration_requirers.databases,
+                databases_relation_data={
+                    db: db_integration_data
+                    for db, db_requirer in integration_requirers.databases.items()
+                    if (db_integration_data := db_requirer.to_relation_data())
+                },
                 s3_relation_data=(
                     integration_requirers.s3.to_relation_data()
                     if integration_requirers.s3
@@ -310,7 +313,7 @@ class IntegrationRequirers:  # pylint: disable=too-many-instance-attributes
     """Collection of integration requirers.
 
     Attrs:
-        databases: DatabaseRequires collection.
+        databases: PaaSDatabaseRequires collection.
         rabbitmq: RabbitMQ requirer object.
         redis: Redis requirer object.
         s3: S3 requirer object.
@@ -320,7 +323,7 @@ class IntegrationRequirers:  # pylint: disable=too-many-instance-attributes
         openfga: OpenFGA requirer object.
     """
 
-    databases: dict[str, DatabaseRequires]
+    databases: dict[str, PaaSDatabaseRequires]
     rabbitmq: RabbitMQRequires | None = None
     redis: PaaSRedisRequires | None = None
     s3: "PaaSS3Requirer | None" = None
@@ -338,7 +341,7 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
 
     Attrs:
         redis_relation_data: The Redis connection info from redis lib.
-        databases_uris: Map from interface_name to the database uri.
+        databases_relation_data: Map from interface_name to the database relation data.
         s3: S3 connection information from relation data.
         saml: SAML parameters.
         rabbitmq: RabbitMQ relation data.
@@ -348,11 +351,11 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
     """
 
     redis_relation_data: PaaSRedisRelationData | None = None
-    databases_uris: dict[str, str] = field(default_factory=dict)
-    s3: "S3RelationData | None" = None
+    databases_relation_data: dict[str, PaaSDatabaseRelationData] = field(default_factory=dict)
+    s3: "PaaSS3RelationData | None" = None
     saml: "PaaSSAMLRelationData | None" = None
-    rabbitmq: "RabbitMQRelationData | None" = None
-    tempo: "TempoRelationData | None" = None
+    rabbitmq: "PaaSRabbitMQRelationData | None" = None
+    tempo: "PaaSTempoRelationData | None" = None
     smtp_parameters: "SmtpParameters | None" = None
     openfga_parameters: "OpenfgaParameters | None" = None
 
@@ -362,11 +365,11 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
         cls,
         *,
         redis_relation_data: PaaSRedisRelationData | None,
-        database_requirers: dict[str, DatabaseRequires],
-        s3_relation_data: "S3RelationData | None" = None,
+        databases_relation_data: dict[str, PaaSDatabaseRelationData],
+        s3_relation_data: "PaaSS3RelationData | None" = None,
         saml_relation_data: "PaaSSAMLRelationData| None" = None,
-        rabbitmq_relation_data: "RabbitMQRelationData | None" = None,
-        tempo_relation_data: "TempoRelationData | None" = None,
+        rabbitmq_relation_data: "PaaSRabbitMQRelationData | None" = None,
+        tempo_relation_data: "PaaSTempoRelationData | None" = None,
         smtp_relation_data: dict | None = None,
         openfga_relation_data: dict | None = None,
     ) -> "IntegrationsState":
@@ -374,7 +377,7 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
 
         Args:
             redis_relation_data: The Redis connection info from redis lib.
-            database_requirers: All database requirers object declared by the charm.
+            databases_relation_data: All database relation data from charm integration.
             s3_relation_data: S3 relation data from S3 lib.
             saml_relation_data: Saml relation data from saml lib.
             rabbitmq_relation_data: RabbitMQ relation data.
@@ -390,11 +393,7 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
 
         return cls(
             redis_relation_data=redis_relation_data,
-            databases_uris={
-                interface_name: uri
-                for interface_name, requirers in database_requirers.items()
-                if (uri := get_uri(requirers)) is not None
-            },
+            databases_relation_data=databases_relation_data,
             s3=s3_relation_data,
             saml=saml_relation_data,
             rabbitmq=rabbitmq_relation_data,

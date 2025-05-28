@@ -18,11 +18,12 @@ from paas_charm.database_migration import DatabaseMigration
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from paas_charm.rabbitmq import RabbitMQRelationData
+    from paas_charm.databases import PaaSDatabaseRelationData
+    from paas_charm.rabbitmq import PaaSRabbitMQRelationData
     from paas_charm.redis import PaaSRedisRelationData
-    from paas_charm.s3 import S3RelationData
+    from paas_charm.s3 import PaaSS3RelationData
     from paas_charm.saml import PaaSSAMLRelationData
-    from paas_charm.tempo import TempoRelationData
+    from paas_charm.tempo import PaaSTempoRelationData
 
 WORKER_SUFFIX = "-worker"
 SCHEDULER_SUFFIX = "-scheduler"
@@ -76,7 +77,27 @@ class WorkloadConfig:  # pylint: disable=too-many-instance-attributes
         return unit_id == "0"
 
 
-def generate_rabbitmq_env(relation_data: "RabbitMQRelationData | None" = None) -> dict[str, str]:
+def generate_db_env(
+    database_name: str, relation_data: "PaaSDatabaseRelationData | None" = None
+) -> dict[str, str]:
+    """Generate environment variable from Database relation data.
+
+    Args:
+        database_name: The name of the database, i.e. POSTGRESQL.
+        relation_data: The charm database integration relation data.
+
+    Returns:
+        Default database environment mappings if DatabaseRelationData is available, empty
+        dictionary otherwise.
+    """
+    if not relation_data:
+        return {}
+    return _db_url_to_env_variables(database_name.upper(), relation_data.uris)
+
+
+def generate_rabbitmq_env(
+    relation_data: "PaaSRabbitMQRelationData | None" = None,
+) -> dict[str, str]:
     """Generate environment variable from RabbitMQ requirer data.
 
     Args:
@@ -110,14 +131,14 @@ def generate_redis_env(relation_data: "PaaSRedisRelationData | None" = None) -> 
     return _db_url_to_env_variables("REDIS", str(relation_data.url))
 
 
-def generate_s3_env(relation_data: "S3RelationData | None" = None) -> dict[str, str]:
-    """Generate environment variable from S3 requirer data.
+def generate_s3_env(relation_data: "PaaSS3RelationData | None" = None) -> dict[str, str]:
+    """Generate environment variable from S3 relation data.
 
     Args:
         relation_data: The charm S3 integration relation data.
 
     Returns:
-        Default S3 environment mappings if S3Requirer is available, empty
+        Default S3 environment mappings if S3RelationData is available, empty
         dictionary otherwise.
     """
     if not relation_data:
@@ -178,7 +199,7 @@ def generate_saml_env(relation_data: "PaaSSAMLRelationData | None" = None) -> di
     }
 
 
-def generate_tempo_env(relation_data: "TempoRelationData | None" = None) -> dict[str, str]:
+def generate_tempo_env(relation_data: "PaaSTempoRelationData | None" = None) -> dict[str, str]:
     """Generate environment variable from TempoRelationData.
 
     Args:
@@ -206,6 +227,7 @@ class App:  # pylint: disable=too-many-instance-attributes
     """Base class for the application manager.
 
     Attributes:
+        generate_db_env: Maps database connection information to environment variables.
         generate_rabbitmq_env: Maps RabbitMQ connection information to environment variables.
         generate_redis_env: Maps Redis connection information to environment variables.
         generate_s3_env: Maps S3 connection information to environment variables.
@@ -213,6 +235,7 @@ class App:  # pylint: disable=too-many-instance-attributes
         generate_tempo_env: Maps tempo tracing connection information to environment variables.
     """
 
+    generate_db_env = staticmethod(generate_db_env)
     generate_rabbitmq_env = staticmethod(generate_rabbitmq_env)
     generate_redis_env = staticmethod(generate_redis_env)
     generate_s3_env = staticmethod(generate_s3_env)
@@ -267,7 +290,9 @@ class App:  # pylint: disable=too-many-instance-attributes
         self._run_migrations()
         self._container.replan()
 
-    def gen_environment(self) -> dict[str, str]:
+    # 2024/04/25 - we're refactoring this method which will get rid of map_integrations_to_env
+    # wrapper function. Ignore too-complex error from flake8 for now.
+    def gen_environment(self) -> dict[str, str]:  # noqa: too-complex
         """Generate a environment dictionary from the charm configurations.
 
         The environment generation follows these rules:
@@ -332,6 +357,11 @@ class App:  # pylint: disable=too-many-instance-attributes
             )
         )
         env.update(self.generate_s3_env(relation_data=self._charm_state.integrations.s3))
+        for (
+            database_name,
+            db_relation_data,
+        ) in self._charm_state.integrations.databases_relation_data.items():
+            env.update(self.generate_db_env(database_name, db_relation_data))
         env.update(self.generate_saml_env(relation_data=self._charm_state.integrations.saml))
         env.update(self.generate_tempo_env(relation_data=self._charm_state.integrations.tempo))
         return env
@@ -420,6 +450,7 @@ def encode_env(value: str | int | float | bool | list | dict) -> str:
     return value if isinstance(value, str) else json.dumps(value)
 
 
+# 2024/04/25 - refactor to get rid of this wrapper function.
 def map_integrations_to_env(  # noqa: C901
     integrations: IntegrationsState, prefix: str = ""
 ) -> dict[str, str]:
@@ -432,10 +463,7 @@ def map_integrations_to_env(  # noqa: C901
     Returns:
        A dictionary representing the environment variables for the IntegrationState.
     """
-    env = {}
-    for interface_name, uri in integrations.databases_uris.items():
-        interface_envvars = _db_url_to_env_variables(interface_name.upper(), uri)
-        env.update(interface_envvars)
+    env: dict[str, str] = {}
 
     if integrations.smtp_parameters:
         smtp = integrations.smtp_parameters
