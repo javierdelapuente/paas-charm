@@ -18,6 +18,8 @@ from paas_charm.database_migration import DatabaseMigration
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from charms.smtp_integrator.v0.smtp import SmtpRelationData
+
     from paas_charm.databases import PaaSDatabaseRelationData
     from paas_charm.rabbitmq import PaaSRabbitMQRelationData
     from paas_charm.redis import PaaSRedisRelationData
@@ -199,6 +201,34 @@ def generate_saml_env(relation_data: "PaaSSAMLRelationData | None" = None) -> di
     }
 
 
+def generate_smtp_env(relation_data: "SmtpRelationData | None" = None) -> dict[str, str]:
+    """Generate environment variable from SMTP relation data.
+
+    Args:
+        relation_data: The charm SMTP integration relation data.
+
+    Returns:
+        SMTP environment mappings if SMTP relation data is available, empty
+        dictionary otherwise.
+    """
+    if not relation_data:
+        return {}
+    return {
+        k: v
+        for k, v in (
+            ("SMTP_HOST", relation_data.host),
+            ("SMTP_PORT", str(relation_data.port)),
+            ("SMTP_USER", relation_data.user),
+            ("SMTP_PASSWORD", relation_data.password),
+            ("SMTP_AUTH_TYPE", relation_data.auth_type.value),
+            ("SMTP_TRANSPORT_SECURITY", relation_data.transport_security.value),
+            ("SMTP_DOMAIN", relation_data.domain),
+            ("SMTP_SKIP_SSL_VERIFY", str(relation_data.skip_ssl_verify)),
+        )
+        if v is not None and v not in ("none")
+    }
+
+
 def generate_tempo_env(relation_data: "PaaSTempoRelationData | None" = None) -> dict[str, str]:
     """Generate environment variable from TempoRelationData.
 
@@ -232,6 +262,7 @@ class App:  # pylint: disable=too-many-instance-attributes
         generate_redis_env: Maps Redis connection information to environment variables.
         generate_s3_env: Maps S3 connection information to environment variables.
         generate_saml_env: Maps SAML connection information to environment variables.
+        generate_smtp_env: Maps STMP connection information to environment variables.
         generate_tempo_env: Maps tempo tracing connection information to environment variables.
     """
 
@@ -240,6 +271,7 @@ class App:  # pylint: disable=too-many-instance-attributes
     generate_redis_env = staticmethod(generate_redis_env)
     generate_s3_env = staticmethod(generate_s3_env)
     generate_saml_env = staticmethod(generate_saml_env)
+    generate_smtp_env = staticmethod(generate_smtp_env)
     generate_tempo_env = staticmethod(generate_tempo_env)
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -363,6 +395,7 @@ class App:  # pylint: disable=too-many-instance-attributes
         ) in self._charm_state.integrations.databases_relation_data.items():
             env.update(self.generate_db_env(database_name, db_relation_data))
         env.update(self.generate_saml_env(relation_data=self._charm_state.integrations.saml))
+        env.update(self.generate_smtp_env(relation_data=self._charm_state.integrations.smtp))
         env.update(self.generate_tempo_env(relation_data=self._charm_state.integrations.tempo))
         return env
 
@@ -464,23 +497,6 @@ def map_integrations_to_env(  # noqa: C901
        A dictionary representing the environment variables for the IntegrationState.
     """
     env: dict[str, str] = {}
-
-    if integrations.smtp_parameters:
-        smtp = integrations.smtp_parameters
-        env.update(
-            (k, v)
-            for k, v in (
-                ("SMTP_HOST", smtp.host),
-                ("SMTP_PORT", str(smtp.port)),
-                ("SMTP_USER", smtp.user),
-                ("SMTP_PASSWORD", smtp.password),
-                ("SMTP_AUTH_TYPE", smtp.auth_type),
-                ("SMTP_TRANSPORT_SECURITY", smtp.transport_security),
-                ("SMTP_DOMAIN", smtp.domain),
-                ("SMTP_SKIP_SSL_VERIFY", smtp.skip_ssl_verify),
-            )
-            if v is not None
-        )
 
     if integrations.openfga_parameters:
         fga = integrations.openfga_parameters

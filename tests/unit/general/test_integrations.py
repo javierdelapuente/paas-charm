@@ -49,21 +49,6 @@ def _generate_map_integrations_to_env_parameters(prefix: str = ""):
         {},
         id="no new env vars",
     )
-    smtp_env = pytest.param(
-        IntegrationsState(
-            smtp_parameters=generate_relation_parameters(
-                SMTP_RELATION_DATA_EXAMPLE, SmtpParameters
-            )
-        ),
-        prefix,
-        {
-            f"{prefix}SMTP_DOMAIN": "example.com",
-            f"{prefix}SMTP_HOST": "test-ip",
-            f"{prefix}SMTP_PORT": "1025",
-            f"{prefix}SMTP_SKIP_SSL_VERIFY": "False",
-        },
-        id=f"With SMTP, prefix: {prefix}",
-    )
     openfga_env = pytest.param(
         IntegrationsState(
             openfga_parameters=generate_relation_parameters(
@@ -79,11 +64,7 @@ def _generate_map_integrations_to_env_parameters(prefix: str = ""):
         },
         id=f"With OpenFGA, prefix: {prefix}",
     )
-    return [
-        empty_env,
-        smtp_env,
-        openfga_env,
-    ]
+    return [empty_env, openfga_env]
 
 
 def _test_map_integrations_to_env_parameters():
@@ -252,11 +233,6 @@ def _test_integrations_state_build_parameters():
             {**relation_dict, "smtp_relation_data": {}},
             False,
             id="Smtp empty parameters",
-        ),
-        pytest.param(
-            {**relation_dict, "smtp_relation_data": {"wrong_key": "wrong_value"}},
-            True,
-            id="Smtp wrong parameters",
         ),
         pytest.param(
             {

@@ -66,7 +66,7 @@ try:
     # the import is used for type hinting
     # pylint: disable=ungrouped-imports
     # pylint: disable=unused-import
-    from charms.smtp_integrator.v0.smtp import SmtpRequires
+    from charms.smtp_integrator.v0.smtp import SmtpRelationData, SmtpRequires
 except ImportError:
     # we already logged it in charm.py
     pass
@@ -206,7 +206,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                     else None
                 ),
                 smtp_relation_data=(
-                    smtp_data.to_relation_data()
+                    smtp_data
                     if (
                         integration_requirers.smtp
                         and (smtp_data := integration_requirers.smtp.get_relation_data())
@@ -345,8 +345,8 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
         s3: S3 connection information from relation data.
         saml: SAML parameters.
         rabbitmq: RabbitMQ relation data.
+        smtp: Smtp parameters.
         tempo: Tracing relation data.
-        smtp_parameters: Smtp parameters.
         openfga_parameters: OpenFGA parameters.
     """
 
@@ -356,7 +356,7 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
     saml: "PaaSSAMLRelationData | None" = None
     rabbitmq: "PaaSRabbitMQRelationData | None" = None
     tempo: "PaaSTempoRelationData | None" = None
-    smtp_parameters: "SmtpParameters | None" = None
+    smtp: "SmtpRelationData | None" = None
     openfga_parameters: "OpenfgaParameters | None" = None
 
     # This dataclass combines all the integrations, so it is reasonable that they stay together.
@@ -370,7 +370,7 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
         saml_relation_data: "PaaSSAMLRelationData| None" = None,
         rabbitmq_relation_data: "PaaSRabbitMQRelationData | None" = None,
         tempo_relation_data: "PaaSTempoRelationData | None" = None,
-        smtp_relation_data: dict | None = None,
+        smtp_relation_data: "SmtpRelationData | None" = None,
         openfga_relation_data: dict | None = None,
     ) -> "IntegrationsState":
         """Initialize a new instance of the IntegrationsState class.
@@ -388,7 +388,6 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
         Return:
             The IntegrationsState instance created.
         """
-        smtp_parameters = generate_relation_parameters(smtp_relation_data, SmtpParameters)
         openfga_parameters = generate_relation_parameters(openfga_relation_data, OpenfgaParameters)
 
         return cls(
@@ -397,8 +396,8 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
             s3=s3_relation_data,
             saml=saml_relation_data,
             rabbitmq=rabbitmq_relation_data,
+            smtp=smtp_relation_data,
             tempo=tempo_relation_data,
-            smtp_parameters=smtp_parameters,
             openfga_parameters=openfga_parameters,
         )
 
