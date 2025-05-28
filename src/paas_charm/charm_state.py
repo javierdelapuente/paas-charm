@@ -214,7 +214,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                     else None
                 ),
                 openfga_relation_data=(
-                    store_info_to_relation_data(store_info)
+                    store_info
                     if (
                         integration_requirers.openfga
                         and (store_info := integration_requirers.openfga.get_store_info())
@@ -340,65 +340,63 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
     This state is related to all the relations that can be optional, like databases, redis...
 
     Attrs:
-        redis_relation_data: The Redis connection info from redis lib.
         databases_relation_data: Map from interface_name to the database relation data.
+        openfga: OpenFGA connection information from relation data.
+        rabbitmq: RabbitMQ relation data.
+        redis_relation_data: The Redis connection info from redis lib.
         s3: S3 connection information from relation data.
         saml: SAML parameters.
-        rabbitmq: RabbitMQ relation data.
         smtp: Smtp parameters.
         tempo: Tracing relation data.
-        openfga_parameters: OpenFGA parameters.
     """
 
-    redis_relation_data: PaaSRedisRelationData | None = None
     databases_relation_data: dict[str, PaaSDatabaseRelationData] = field(default_factory=dict)
+    openfga: "OpenfgaProviderAppData | None" = None
+    rabbitmq: "PaaSRabbitMQRelationData | None" = None
+    redis_relation_data: PaaSRedisRelationData | None = None
     s3: "PaaSS3RelationData | None" = None
     saml: "PaaSSAMLRelationData | None" = None
-    rabbitmq: "PaaSRabbitMQRelationData | None" = None
-    tempo: "PaaSTempoRelationData | None" = None
     smtp: "SmtpRelationData | None" = None
-    openfga_parameters: "OpenfgaParameters | None" = None
+    tempo: "PaaSTempoRelationData | None" = None
 
     # This dataclass combines all the integrations, so it is reasonable that they stay together.
     @classmethod
     def build(  # pylint: disable=too-many-arguments
         cls,
         *,
-        redis_relation_data: PaaSRedisRelationData | None,
         databases_relation_data: dict[str, PaaSDatabaseRelationData],
+        openfga_relation_data: "OpenfgaProviderAppData | None" = None,
+        rabbitmq_relation_data: "PaaSRabbitMQRelationData | None" = None,
+        redis_relation_data: PaaSRedisRelationData | None,
         s3_relation_data: "PaaSS3RelationData | None" = None,
         saml_relation_data: "PaaSSAMLRelationData| None" = None,
-        rabbitmq_relation_data: "PaaSRabbitMQRelationData | None" = None,
-        tempo_relation_data: "PaaSTempoRelationData | None" = None,
         smtp_relation_data: "SmtpRelationData | None" = None,
-        openfga_relation_data: dict | None = None,
+        tempo_relation_data: "PaaSTempoRelationData | None" = None,
     ) -> "IntegrationsState":
         """Initialize a new instance of the IntegrationsState class.
 
         Args:
-            redis_relation_data: The Redis connection info from redis lib.
             databases_relation_data: All database relation data from charm integration.
+            openfga_relation_data: OpenFGA relation data from openfga lib.
+            rabbitmq_relation_data: RabbitMQ relation data.
+            redis_relation_data: The Redis connection info from redis lib.
             s3_relation_data: S3 relation data from S3 lib.
             saml_relation_data: Saml relation data from saml lib.
-            rabbitmq_relation_data: RabbitMQ relation data.
-            tempo_relation_data: The tracing relation data provided by the Tempo charm.
             smtp_relation_data: Smtp relation data from smtp lib.
-            openfga_relation_data: OpenFGA relation data from openfga lib.
+            tempo_relation_data: The tracing relation data provided by the Tempo charm.
 
         Return:
             The IntegrationsState instance created.
         """
-        openfga_parameters = generate_relation_parameters(openfga_relation_data, OpenfgaParameters)
-
         return cls(
-            redis_relation_data=redis_relation_data,
             databases_relation_data=databases_relation_data,
+            openfga=openfga_relation_data,
+            rabbitmq=rabbitmq_relation_data,
+            redis_relation_data=redis_relation_data,
             s3=s3_relation_data,
             saml=saml_relation_data,
-            rabbitmq=rabbitmq_relation_data,
             smtp=smtp_relation_data,
             tempo=tempo_relation_data,
-            openfga_parameters=openfga_parameters,
         )
 
 

@@ -2,7 +2,6 @@
 # See LICENSE file for licensing details.
 
 """Integrations unit tests."""
-import itertools
 import pathlib
 import unittest
 from types import NoneType
@@ -16,11 +15,10 @@ import paas_charm
 from paas_charm._gunicorn.webserver import GunicornWebserver, WebserverConfig
 from paas_charm._gunicorn.workload_config import create_workload_config
 from paas_charm._gunicorn.wsgi_app import WsgiApp
-from paas_charm.app import App, map_integrations_to_env
+from paas_charm.app import App
 from paas_charm.charm_state import (
     CharmState,
     IntegrationsState,
-    OpenfgaParameters,
     PaaSS3RelationData,
     RelationParam,
     SamlParameters,
@@ -49,47 +47,7 @@ def _generate_map_integrations_to_env_parameters(prefix: str = ""):
         {},
         id="no new env vars",
     )
-    openfga_env = pytest.param(
-        IntegrationsState(
-            openfga_parameters=generate_relation_parameters(
-                OPENFGA_RELATION_DATA_EXAMPLE, OpenfgaParameters
-            )
-        ),
-        prefix,
-        {
-            f"{prefix}FGA_STORE_ID": "test-store-id",
-            f"{prefix}FGA_TOKEN": "test-token",
-            f"{prefix}FGA_GRPC_API_URL": "localhost:8081",
-            f"{prefix}FGA_HTTP_API_URL": "localhost:8080",
-        },
-        id=f"With OpenFGA, prefix: {prefix}",
-    )
-    return [empty_env, openfga_env]
-
-
-def _test_map_integrations_to_env_parameters():
-
-    prefixes = ["FLASK_", "DJANGO_", ""]
-    return itertools.chain.from_iterable(
-        _generate_map_integrations_to_env_parameters(prefix) for prefix in prefixes
-    )
-
-
-@pytest.mark.parametrize(
-    "integrations, prefix, expected_env", _test_map_integrations_to_env_parameters()
-)
-def test_map_integrations_to_env(
-    integrations,
-    prefix,
-    expected_env,
-):
-    """
-    arrange: prepare integrations state.
-    act: call to generate mappings to env variables.
-    assert: the variables generated should be the expected ones.
-    """
-    env = map_integrations_to_env(integrations, prefix)
-    assert env == expected_env
+    return [empty_env]
 
 
 @pytest.mark.parametrize(
@@ -163,23 +121,6 @@ def test_map_integrations_to_env(
             id="Smtp wrong parameters",
         ),
         pytest.param({}, SmtpParameters, True, NoneType, True, id="Smtp empty parameters"),
-        pytest.param(
-            OPENFGA_RELATION_DATA_EXAMPLE,
-            OpenfgaParameters,
-            False,
-            OpenfgaParameters,
-            False,
-            id="Openfga correct parameters",
-        ),
-        pytest.param(
-            {"wrong_key": "wrong_value"},
-            OpenfgaParameters,
-            False,
-            NoneType,
-            True,
-            id="Openfga wrong parameters",
-        ),
-        pytest.param({}, OpenfgaParameters, True, NoneType, True, id="Openfga empty parameters"),
     ],
 )
 def test_generate_relation_parameters(
@@ -256,11 +197,6 @@ def _test_integrations_state_build_parameters():
             {**relation_dict, "openfga_relation_data": {}},
             False,
             id="OpenFGA empty parameters",
-        ),
-        pytest.param(
-            {**relation_dict, "openfga_relation_data": {"wrong_key": "wrong_value"}},
-            True,
-            id="OpenFGA wrong parameters",
         ),
     ]
 

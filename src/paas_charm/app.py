@@ -12,12 +12,13 @@ from typing import TYPE_CHECKING, List
 
 import ops
 
-from paas_charm.charm_state import CharmState, IntegrationsState
+from paas_charm.charm_state import CharmState
 from paas_charm.database_migration import DatabaseMigration
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from charms.openfga_k8s.v1.openfga import OpenfgaProviderAppData
     from charms.smtp_integrator.v0.smtp import SmtpRelationData
 
     from paas_charm.databases import PaaSDatabaseRelationData
@@ -77,6 +78,30 @@ class WorkloadConfig:  # pylint: disable=too-many-instance-attributes
         """
         unit_id = self.unit_name.split("/")[1]
         return unit_id == "0"
+
+
+def generate_openfga_env(relation_data: "OpenfgaProviderAppData | None" = None) -> dict[str, str]:
+    """Generate environment variable from OpenFGA relation data.
+
+    Args:
+        relation_data: The charm OpenFGA integration relation data.
+
+    Returns:
+        OpenFGA environment mappings if OpenFGA requirer is available, empty
+        dictionary otherwise.
+    """
+    if not relation_data:
+        return {}
+    return {
+        k: v
+        for k, v in (
+            ("FGA_STORE_ID", relation_data.store_id),
+            ("FGA_TOKEN", relation_data.token),
+            ("FGA_GRPC_API_URL", relation_data.grpc_api_url),
+            ("FGA_HTTP_API_URL", relation_data.http_api_url),
+        )
+        if v is not None
+    }
 
 
 def generate_db_env(
@@ -258,6 +283,7 @@ class App:  # pylint: disable=too-many-instance-attributes
 
     Attributes:
         generate_db_env: Maps database connection information to environment variables.
+        generate_openfga_env: Maps OpenFGA connection information to environment variables.
         generate_rabbitmq_env: Maps RabbitMQ connection information to environment variables.
         generate_redis_env: Maps Redis connection information to environment variables.
         generate_s3_env: Maps S3 connection information to environment variables.
@@ -267,6 +293,7 @@ class App:  # pylint: disable=too-many-instance-attributes
     """
 
     generate_db_env = staticmethod(generate_db_env)
+    generate_openfga_env = staticmethod(generate_openfga_env)
     generate_rabbitmq_env = staticmethod(generate_rabbitmq_env)
     generate_redis_env = staticmethod(generate_redis_env)
     generate_s3_env = staticmethod(generate_s3_env)
@@ -374,12 +401,7 @@ class App:  # pylint: disable=too-many-instance-attributes
         if self._charm_state.peer_fqdns is not None:
             env[f"{prefix}PEER_FQDNS"] = self._charm_state.peer_fqdns
 
-        if self._charm_state.integrations:
-            env.update(
-                map_integrations_to_env(
-                    self._charm_state.integrations, prefix=self.integrations_prefix
-                )
-            )
+        env.update(self.generate_openfga_env(relation_data=self._charm_state.integrations.openfga))
         env.update(
             self.generate_rabbitmq_env(relation_data=self._charm_state.integrations.rabbitmq)
         )
@@ -481,37 +503,6 @@ def encode_env(value: str | int | float | bool | list | dict) -> str:
         The original string if the input is a string, or JSON encoded value.
     """
     return value if isinstance(value, str) else json.dumps(value)
-
-
-# 2024/04/25 - refactor to get rid of this wrapper function.
-def map_integrations_to_env(  # noqa: C901
-    integrations: IntegrationsState, prefix: str = ""
-) -> dict[str, str]:
-    """Generate environment variables for the IntegrationState.
-
-    Args:
-       integrations: the IntegrationsState information.
-       prefix: prefix to append to the env variables.
-
-    Returns:
-       A dictionary representing the environment variables for the IntegrationState.
-    """
-    env: dict[str, str] = {}
-
-    if integrations.openfga_parameters:
-        fga = integrations.openfga_parameters
-        env.update(
-            (k, v)
-            for k, v in (
-                ("FGA_STORE_ID", fga.store_id),
-                ("FGA_TOKEN", fga.token),
-                ("FGA_GRPC_API_URL", fga.grpc_api_url),
-                ("FGA_HTTP_API_URL", fga.http_api_url),
-            )
-            if v is not None
-        )
-
-    return {prefix + k: v for k, v in env.items()}
 
 
 def _db_url_to_env_variables(prefix: str, url: str) -> dict[str, str]:
