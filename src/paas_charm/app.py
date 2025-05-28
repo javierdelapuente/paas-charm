@@ -14,11 +14,12 @@ import ops
 
 from paas_charm.charm_state import CharmState, IntegrationsState
 from paas_charm.database_migration import DatabaseMigration
-from paas_charm.rabbitmq import RabbitMQRelationData
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from paas_charm.rabbitmq import RabbitMQRelationData
+    from paas_charm.redis import PaaSRedisRelationData
     from paas_charm.s3 import S3RelationData
     from paas_charm.saml import PaaSSAMLRelationData
 
@@ -74,7 +75,7 @@ class WorkloadConfig:  # pylint: disable=too-many-instance-attributes
         return unit_id == "0"
 
 
-def generate_rabbitmq_env(relation_data: RabbitMQRelationData | None = None) -> dict[str, str]:
+def generate_rabbitmq_env(relation_data: "RabbitMQRelationData | None" = None) -> dict[str, str]:
     """Generate environment variable from RabbitMQ requirer data.
 
     Args:
@@ -91,6 +92,21 @@ def generate_rabbitmq_env(relation_data: RabbitMQRelationData | None = None) -> 
     if len(parsed_url.path) > 1:
         envvars["RABBITMQ_VHOST"] = urllib.parse.unquote(parsed_url.path.split("/")[1])
     return envvars
+
+
+def generate_redis_env(relation_data: "PaaSRedisRelationData | None" = None) -> dict[str, str]:
+    """Generate environment variable from Redis relation data.
+
+    Args:
+        relation_data: The charm Redis integration relation data.
+
+    Returns:
+        Redis environment mappings if Redis relation data is available, empty
+        dictionary otherwise.
+    """
+    if not relation_data:
+        return {}
+    return _db_url_to_env_variables("REDIS", str(relation_data.url))
 
 
 def generate_s3_env(relation_data: "S3RelationData | None" = None) -> dict[str, str]:
@@ -168,11 +184,13 @@ class App:  # pylint: disable=too-many-instance-attributes
 
     Attributes:
         generate_rabbitmq_env: Maps RabbitMQ connection information to environment variables.
+        generate_redis_env: Maps Redis connection information to environment variables.
         generate_s3_env: Maps S3 connection information to environment variables.
         generate_saml_env: Maps SAML connection information to environment variables.
     """
 
     generate_rabbitmq_env = staticmethod(generate_rabbitmq_env)
+    generate_redis_env = staticmethod(generate_redis_env)
     generate_s3_env = staticmethod(generate_s3_env)
     generate_saml_env = staticmethod(generate_saml_env)
 
@@ -283,6 +301,11 @@ class App:  # pylint: disable=too-many-instance-attributes
         env.update(
             self.generate_rabbitmq_env(relation_data=self._charm_state.integrations.rabbitmq)
         )
+        env.update(
+            self.generate_redis_env(
+                relation_data=self._charm_state.integrations.redis_relation_data
+            )
+        )
         env.update(self.generate_s3_env(relation_data=self._charm_state.integrations.s3))
         env.update(self.generate_saml_env(relation_data=self._charm_state.integrations.saml))
         return env
@@ -384,9 +407,6 @@ def map_integrations_to_env(  # noqa: C901
        A dictionary representing the environment variables for the IntegrationState.
     """
     env = {}
-    if integrations.redis_uri:
-        redis_envvars = _db_url_to_env_variables("REDIS", integrations.redis_uri)
-        env.update(redis_envvars)
     for interface_name, uri in integrations.databases_uris.items():
         interface_envvars = _db_url_to_env_variables(interface_name.upper(), uri)
         env.update(interface_envvars)

@@ -51,21 +51,6 @@ def _generate_map_integrations_to_env_parameters(prefix: str = ""):
         {},
         id="no new env vars",
     )
-    redis_env = pytest.param(
-        IntegrationsState(redis_uri="http://redisuri"),
-        prefix,
-        {
-            f"{prefix}REDIS_DB_CONNECT_STRING": "http://redisuri",
-            f"{prefix}REDIS_DB_FRAGMENT": "",
-            f"{prefix}REDIS_DB_HOSTNAME": "redisuri",
-            f"{prefix}REDIS_DB_NETLOC": "redisuri",
-            f"{prefix}REDIS_DB_PARAMS": "",
-            f"{prefix}REDIS_DB_PATH": "",
-            f"{prefix}REDIS_DB_QUERY": "",
-            f"{prefix}REDIS_DB_SCHEME": "http",
-        },
-        id=f"With Redis uri, prefix: {prefix}",
-    )
     tempo_env = pytest.param(
         IntegrationsState(
             tempo_parameters=generate_relation_parameters(
@@ -162,7 +147,6 @@ def _generate_map_integrations_to_env_parameters(prefix: str = ""):
     )
     return [
         empty_env,
-        redis_env,
         tempo_env,
         smtp_env,
         databases_env,
@@ -311,7 +295,7 @@ def test_generate_relation_parameters(
 
 def _test_integrations_state_build_parameters():
     relation_dict: dict[str, str] = {
-        "redis_uri": None,
+        "redis": None,
         "database_requirers": {},
         "s3": None,
         "saml_relation_data": None,
@@ -363,16 +347,6 @@ def _test_integrations_state_build_parameters():
             id="Smtp wrong parameters",
         ),
         pytest.param(
-            {**relation_dict, "redis_uri": "http://redisuri"},
-            False,
-            id="Redis correct parameters",
-        ),
-        pytest.param(
-            {**relation_dict, "redis_uri": ""},
-            False,
-            id="Redis empty parameters",
-        ),
-        pytest.param(
             {
                 **relation_dict,
                 "rabbitmq_uri": "amqp://test-app:3m036hhyiDHs@rabbitmq-k8s-endpoints.testing.svc.cluster.local:5672/",
@@ -419,7 +393,7 @@ def test_integrations_state_build(
     if should_fail:
         with pytest.raises(CharmConfigInvalidError):
             IntegrationsState.build(
-                redis_uri=relation_dict["redis_uri"],
+                redis_relation_data=relation_dict["redis"],
                 database_requirers=relation_dict["database_requirers"],
                 s3_relation_data=relation_dict["s3"],
                 saml_relation_data=relation_dict["saml_relation_data"],
@@ -432,7 +406,7 @@ def test_integrations_state_build(
     else:
         assert isinstance(
             IntegrationsState.build(
-                redis_uri=relation_dict["redis_uri"],
+                redis_relation_data=relation_dict["redis"],
                 database_requirers=relation_dict["database_requirers"],
                 s3_relation_data=relation_dict["s3"],
                 saml_relation_data=relation_dict["saml_relation_data"],
