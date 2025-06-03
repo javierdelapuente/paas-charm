@@ -215,7 +215,7 @@ def s3_integrator_app_fixture(juju: jubilant.Juju, minio_app, s3_credentials, s3
         channel="edge",
     )
     juju.wait(
-        lambda status: jubilant.all_blocked(status, [s3_integrator]),
+        lambda status: jubilant.all_blocked(status, s3_integrator),
         timeout=120,
     )
     status = juju.status()
@@ -338,7 +338,9 @@ def mailcatcher(load_kube_config, juju):
         time.sleep(1)
     SmtpCredential = collections.namedtuple("SmtpCredential", "host port pod_ip")
     return SmtpCredential(
-        host=f"mailcatcher-service.{namespace}.svc.cluster.local", port=1025, pod_ip=pod_ip
+        host=f"mailcatcher-service.{namespace}.svc.cluster.local",
+        port=1025,
+        pod_ip=pod_ip,
     )
 
 
@@ -396,7 +398,7 @@ def deploy_cos_fixture(
         )
         juju.wait(
             lambda status: jubilant.all_active(
-                status, [loki_app.name, prometheus_app.name, grafana_app_name]
+                status, loki_app.name, prometheus_app.name, grafana_app_name
             )
         )
         juju.integrate(
@@ -426,6 +428,6 @@ def deploy_openfga_server_fixture(juju: jubilant.Juju) -> App:
     juju.deploy(openfga_server_app.name, channel="latest/stable")
     juju.integrate(openfga_server_app.name, "postgresql-k8s")
     juju.wait(
-        lambda status: jubilant.all_active(status, [openfga_server_app.name, "postgresql-k8s"])
+        lambda status: jubilant.all_active(status, openfga_server_app.name, "postgresql-k8s")
     )
     return openfga_server_app
