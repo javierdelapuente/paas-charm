@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize(
     "app_fixture, port",
     [
+        ("spring_boot_app", 8080),
         ("expressjs_app", 8080),
         ("fastapi_app", 8080),
         ("go_app", 8080),
@@ -31,6 +32,7 @@ def test_smtp_integrations(
     port,
     request: pytest.FixtureRequest,
     mailcatcher,
+    http: requests.Session,
 ):
     """
     arrange: Build and deploy the charm. Integrate the charm with the smtp-integrator.
@@ -55,7 +57,7 @@ def test_smtp_integrations(
 
     status = juju.status()
     unit_ip = status.apps[app.name].units[app.name + "/0"].address
-    response = requests.get(f"http://{unit_ip}:{port}/send_mail", timeout=5)
+    response = http.get(f"http://{unit_ip}:{port}/send_mail", timeout=5)
     assert response.status_code == 200
     assert "Sent" in response.text
 
