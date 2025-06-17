@@ -144,7 +144,18 @@ def generate_redis_env(
     """
     if not relation_data:
         return {}
-    return {}
+    parsed = urlparse(str(relation_data.url))
+    env = {"spring.data.redis.url": str(relation_data.url)}
+    if parsed.hostname:
+        env["spring.data.redis.host"] = parsed.hostname
+    if parsed.port:
+        env["spring.data.redis.port"] = str(parsed.port)
+    if parsed.username:
+        env["spring.data.redis.username"] = parsed.username
+    if parsed.password:
+        env["spring.data.redis.password"] = parsed.password
+
+    return env
 
 
 def generate_s3_env(relation_data: "PaaSS3RelationData | None" = None) -> dict[str, str]:
@@ -304,11 +315,10 @@ class Charm(PaasCharm):
         """
         charm_state = self._create_charm_state()
         if charm_state.integrations.saml and charm_state.integrations.saml.signing_certificate:
-            if charm_state.integrations.saml.signing_certificate:
-                cert = charm_state.integrations.saml.signing_certificate
-                if not cert.startswith("-----BEGIN CERTIFICATE-----"):
-                    cert = f"-----BEGIN CERTIFICATE-----\n{cert}\n-----END CERTIFICATE-----"
-                self._container.push(self._workload_config.app_dir / "saml.cert", cert)
+            cert = charm_state.integrations.saml.signing_certificate
+            if not cert.startswith("-----BEGIN CERTIFICATE-----"):
+                cert = f"-----BEGIN CERTIFICATE-----\n{cert}\n-----END CERTIFICATE-----"
+            self._container.push(self._workload_config.app_dir / "saml.cert", cert)
 
         return SpringBootApp(
             container=self._container,
