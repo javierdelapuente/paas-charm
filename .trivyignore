@@ -28,7 +28,8 @@ CVE-2024-45590
 CVE-2024-4068
 # @babel/traverse
 CVE-2023-45133
-# Spring boot
+# Spring boot apache-commons-io
+CVE-2024-47554
 # net.minidev:json-smart
 CVE-2024-57699
 # org.apache.tomcat.embed:tomcat-embed-core 
