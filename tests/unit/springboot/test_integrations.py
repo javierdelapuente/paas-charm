@@ -258,3 +258,41 @@ def test_mysql_integration(
     assert environment["spring.datasource.url"] == "jdbc:mysql://test-mysql:3306/spring-boot-k8s"
     assert environment["spring.jpa.hibernate.ddl-auto"] == "none"
     assert environment["MYSQL_DB_NAME"] == "spring-boot-k8s"
+
+
+def test_openfga_integration(
+    base_state,
+) -> None:
+    """
+    arrange: add OpenFGA relation to the base state.
+    act: start the springboot charm and set springboot-app container to be ready.
+    assert: the springboot charm should have the OpenFGA related env variables.
+    """
+    base_state["relations"].append(
+        testing.Relation(
+            endpoint="openfga",
+            interface="openfga",
+            remote_app_data={
+                "store_id": "test-store-id",
+                "token": "test-token",
+                "grpc_api_url": "localhost:8081",
+                "http_api_url": "localhost:8080",
+            },
+        )
+    )
+    state = testing.State(**base_state)
+    context = testing.Context(
+        charm_type=SpringBootCharm,
+    )
+
+    out = context.run(context.on.config_changed(), state)
+    environment = list(out.containers)[0].plan.services["spring-boot"].environment
+    assert out.unit_status == testing.ActiveStatus()
+
+    openfga_relation = out.get_relations("openfga")
+    assert len(openfga_relation) == 1
+
+    assert environment["openfga.store-id"] == "test-store-id"
+    assert environment["openfga.credentials.method"] == "API_TOKEN"
+    assert environment["openfga.credentials.config.api-token"] == "test-token"
+    assert environment["openfga.api-url"] == "localhost:8080"
