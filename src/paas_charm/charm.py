@@ -6,9 +6,11 @@ import abc
 import logging
 import pathlib
 import typing
+import urllib.parse
 
 import ops
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequiresEvent
+from charms.hydra.v0.oauth import ClientConfig, OAuthRequirer
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import RelationMeta
@@ -124,6 +126,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
         self._tracing = self._init_tracing(requires)
         self._smtp = self._init_smtp(requires)
         self._openfga = self._init_openfga(requires)
+        self._oauth = self._init_oauth(requires)
 
         self._database_migration = DatabaseMigration(
             container=self.unit.get_container(self._workload_config.container_name),
@@ -340,6 +343,43 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
                     "`charmcraft fetch-lib charms.openfga_k8s.v1.openfga`"
                 )
         return openfga
+
+    def _init_oauth(self, requires):
+        oauth = None
+        if "oauth" in requires and requires["oauth"].interface_name == "oauth":
+            try:
+                client_config = self._get_oauth_client_config()
+                if not client_config:
+                    return None
+                oauth = OAuthRequirer(self, client_config=client_config)
+                self.framework.observe(
+                    oauth._on_relation_created_event, self._on_openfga_store_created
+                )
+                self.framework.observe(
+                    oauth._on_relation_changed_event, self._on_openfga_store_created
+                )
+                self.framework.observe(
+                    oauth._on_relation_broken_event, self._on_openfga_store_created
+                )
+            except NameError:
+                logger.exception(
+                    "Missing charm library, please run "
+                    "`charmcraft fetch-lib charms.hydra.v0.oauth`"
+                )
+
+        return oauth
+
+    def _get_oauth_client_config(self) -> ClientConfig:
+        public_uri = self._ingress.url
+        if not public_uri:
+            return None
+        return ClientConfig(
+            urllib.parse.urljoin(public_uri, "/api/auth/oauth/oidc/callback"),
+            scope="openid profile email",
+            grant_types=["authorization_code"],
+            # this is not a secret
+            token_endpoint_auth_method="client_secret_post",  # nosec
+        )
 
     def get_framework_config(self) -> BaseModel:
         """Return the framework related configurations.
@@ -598,6 +638,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
                 tracing=self._tracing,
                 smtp=self._smtp,
                 openfga=self._openfga,
+                oauth=self._oauth,
             ),
             base_url=self._base_url,
         )

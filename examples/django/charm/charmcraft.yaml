@@ -40,6 +40,8 @@ charm-libs:
   version: '0'
 - lib: tempo-coordinator-k8s.tracing
   version: '0'
+- lib: hydra.oauth
+  version: '0'
 
 actions:
   rotate-secret-key:

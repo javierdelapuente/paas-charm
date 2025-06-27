@@ -544,3 +544,19 @@ def deploy_rabbitmq_k8s_fixture(juju: jubilant.Juju) -> App:
         timeout=10 * 60,
     )
     return rabbitmq_k8s
+
+@pytest.fixture(scope="module", name="ext_idp_service")
+def external_idp_service_fixture():
+    return None
+
+@pytest.fixture(scope="module", name="identity_bundle")
+def deploy_identity_bundle_fixture(juju: jubilant.Juju):
+    """Deploy rabbitmq-k8s app."""
+
+    juju.deploy("identity-platform", channel="latest/edge")
+    juju.refresh("identity-platform-login-ui-operator", revision=105, trust=True)
+    juju.wait(
+        jubilant.all_active,
+        timeout=30 * 60,
+    )
+

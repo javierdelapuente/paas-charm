@@ -16,6 +16,7 @@ from paas_charm.utils import build_validation_error_message, config_metadata
 
 # This is just for type checking, no need to cover this code.
 if typing.TYPE_CHECKING:  # pragma: nocover
+    from charms.hydra.v0.oauth import OauthProviderConfig, OAuthRequirer
     from charms.openfga_k8s.v1.openfga import OpenfgaProviderAppData, OpenFGARequires
     from charms.smtp_integrator.v0.smtp import SmtpRelationData, SmtpRequires
 
@@ -172,6 +173,11 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                     if integration_requirers.tracing
                     else None
                 ),
+                oauth=(
+                    integration_requirers.oauth.get_provider_info()
+                    if integration_requirers.oauth
+                    else None
+                ),
             )
         except InvalidRelationDataError as exc:
             raise CharmConfigInvalidError(f"Invalid {exc.relation} relation data.") from exc
@@ -280,6 +286,7 @@ class IntegrationRequirers:  # pylint: disable=too-many-instance-attributes
     saml: "PaaSSAMLRequirer | None" = None
     tracing: "PaaSTracingEndpointRequirer | None" = None
     smtp: "SmtpRequires | None" = None
+    oauth: "OAuthRequirer | None" = None
 
 
 @dataclass
@@ -307,6 +314,7 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
     saml: "PaaSSAMLRelationData | None" = None
     smtp: "SmtpRelationData | None" = None
     tracing: "PaaSTracingRelationData | None" = None
+    oauth: "OauthProviderConfig | None" = None
 
 
 class ProxyConfig(BaseModel):

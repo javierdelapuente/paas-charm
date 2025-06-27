@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, List
 
 import ops
+from charms.hydra.v0.oauth import OauthProviderConfig
 
 from paas_charm.charm_state import CharmState
 from paas_charm.database_migration import DatabaseMigration
@@ -291,6 +292,33 @@ def generate_prometheus_env(workload_config: WorkloadConfig) -> dict[str, str]:
     return {}
 
 
+def generate_oauth_env(relation_data: "OauthProviderConfig | None" = None) -> dict[str, str]:
+    """Generate environment variable from OauthProviderConfig.
+
+    Args:
+        relation_data: The charm Oauth integration relation data.
+
+    Returns:
+        Default Oauth environment mappings if OauthProviderConfig is available, empty
+        dictionary otherwise.
+    """
+    if not relation_data:
+        return {}
+    return {
+        k: v
+        for k, v in (
+            ("OIDC_CLIENT_ID", relation_data.client_id),
+            ("OIDC_CLIENT_SECRET", relation_data.client_secret),
+            ("OIDC_BASE_URI", relation_data.issuer_url),
+            ("OIDC_AUTH_URI", relation_data.authorization_endpoint),
+            ("OIDC_TOKEN_URI", relation_data.token_endpoint),
+            ("OIDC_USER_URI", relation_data.userinfo_endpoint),
+            ("OIDC_SCOPES", relation_data.scope),
+        )
+        if v is not None
+    }
+
+
 # too-many-instance-attributes is disabled because this class
 # contains 1 more attributes than pylint allows
 class App:  # pylint: disable=too-many-instance-attributes
@@ -317,6 +345,7 @@ class App:  # pylint: disable=too-many-instance-attributes
     generate_smtp_env = staticmethod(generate_smtp_env)
     generate_tempo_env = staticmethod(generate_tempo_env)
     generate_prometheus_env = staticmethod(generate_prometheus_env)
+    generate_oauth_env = staticmethod(generate_oauth_env)
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -443,6 +472,7 @@ class App:  # pylint: disable=too-many-instance-attributes
         env.update(self.generate_smtp_env(relation_data=self._charm_state.integrations.smtp))
         env.update(self.generate_tempo_env(relation_data=self._charm_state.integrations.tracing))
         env.update(self.generate_prometheus_env(self._workload_config))
+        env.update(self.generate_oauth_env(relation_data=self._charm_state.integrations.oauth))
         return {prefix + k: v for (k, v) in env.items()}
 
     @property
