@@ -24,6 +24,7 @@ if typing.TYPE_CHECKING:
     from paas_charm.redis import PaaSRedisRelationData
     from paas_charm.s3 import PaaSS3RelationData
     from paas_charm.saml import PaaSSAMLRelationData
+    from paas_charm.tracing import PaaSTracingRelationData
 
 logger = logging.getLogger(__name__)
 
@@ -34,22 +35,41 @@ class SpringBootConfig(FrameworkConfig):
     """Represent Spring Boot builtin configuration values.
 
     Attrs:
-        port: port where the application is listening
-        metrics_port: port where the metrics are collected
+        server_port: port where the application is listening
+        management_server_port: port where the metrics are collected
         metrics_path: path where the metrics are collected
         secret_key: a secret key that will be used for securely signing the session cookie
             and can be used for any other security related needs by your Flask application.
         model_config: Pydantic model configuration.
     """
 
-    port: int = Field(alias="app-port", default=8080, gt=0)
-    metrics_port: int | None = Field(alias="metrics-port", default=8080, gt=0)
+    server_port: int = Field(alias="app-port", default=8080, gt=0)
+    management_server_port: int | None = Field(alias="metrics-port", default=8080, gt=0)
     metrics_path: str | None = Field(
         alias="metrics-path", default="/actuator/prometheus", min_length=1
     )
     secret_key: str | None = Field(alias="app-secret-key", default=None, min_length=1)
 
     model_config = ConfigDict(extra="ignore")
+
+
+def generate_prometheus_env(workload_config: WorkloadConfig) -> dict[str, str]:
+    """Generate environment variable from WorkloadConfig.
+
+    Args:
+        workload_config: The charm workload config.
+
+    Returns:
+        Default Prometheus environment mappings.
+    """
+    if not workload_config.metrics_path:
+        return {}
+    metrics_path_list = [part for part in workload_config.metrics_path.split("/") if part]
+    return {
+        "management.endpoints.web.exposure.include": "prometheus",
+        "management.endpoints.web.base-path": f"/{'/'.join(metrics_path_list[:-1])}",
+        "management.endpoints.web.path-mapping.prometheus": metrics_path_list[-1],
+    }
 
 
 def generate_db_env(
@@ -247,6 +267,32 @@ def generate_smtp_env(relation_data: "SmtpRelationData | None" = None) -> dict[s
     }
 
 
+def generate_tempo_env(relation_data: "PaaSTracingRelationData | None" = None) -> dict[str, str]:
+    """Generate environment variable from TempoRelationData.
+
+    Args:
+        relation_data: The charm Tempo integration relation data.
+
+    Returns:
+        Default Tempo tracing environment mappings if TempoRelationData is available, empty
+        dictionary otherwise.
+    """
+    if not relation_data:
+        return {
+            "OTEL_TRACES_EXPORTER": "none",
+            "OTEL_METRICS_EXPORTER": "none",
+            "OTEL_LOGS_EXPORTER": "none",
+        }
+    return {
+        k: v
+        for k, v in (
+            ("OTEL_SERVICE_NAME", relation_data.service_name),
+            ("OTEL_EXPORTER_OTLP_ENDPOINT", str(relation_data.endpoint)),
+        )
+        if v is not None
+    }
+
+
 class SpringBootApp(App):
     """Spring Boot application with custom environment variable mappers.
 
@@ -258,6 +304,8 @@ class SpringBootApp(App):
         generate_s3_env: Maps S3 connection information to environment variables.
         generate_saml_env: Maps SAML connection information to environment variables.
         generate_smtp_env: Maps STMP connection information to environment variables.
+        generate_tempo_env: Maps Tracing connection information to environment variables.
+        generate_prometheus_env: Maps Prometheus connection information to environment variables.
     """
 
     generate_db_env = staticmethod(generate_db_env)
@@ -267,6 +315,8 @@ class SpringBootApp(App):
     generate_s3_env = staticmethod(generate_s3_env)
     generate_saml_env = staticmethod(generate_saml_env)
     generate_smtp_env = staticmethod(generate_smtp_env)
+    generate_tempo_env = staticmethod(generate_tempo_env)
+    generate_prometheus_env = staticmethod(generate_prometheus_env)
 
 
 class Charm(PaasCharm):
@@ -297,14 +347,14 @@ class Charm(PaasCharm):
         return WorkloadConfig(
             framework=framework_name,
             container_name=WORKLOAD_CONTAINER_NAME,
-            port=framework_config.port,
+            port=framework_config.server_port,
             base_dir=base_dir,
             app_dir=base_dir,
             state_dir=state_dir,
             service_name=framework_name,
             log_files=[],
             unit_name=self.unit.name,
-            metrics_target=f"*:{framework_config.metrics_port}",
+            metrics_target=f"*:{framework_config.management_server_port}",
             metrics_path=framework_config.metrics_path,
         )
 
@@ -326,5 +376,13 @@ class Charm(PaasCharm):
             charm_state=charm_state,
             workload_config=self._workload_config,
             database_migration=self._database_migration,
-            framework_config_prefix="SERVER_",
+            framework_config_prefix="",
         )
+
+    def get_cos_dir(self) -> str:
+        """Return the directory with COS related files.
+
+        Returns:
+            Return the directory with COS related files.
+        """
+        return str((pathlib.Path(__file__).parent / "cos").absolute())
