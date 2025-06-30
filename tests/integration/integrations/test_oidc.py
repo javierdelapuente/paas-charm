@@ -48,7 +48,6 @@ async def test_oidc_integrations(
     app_fixture: App,
     port,
     request: pytest.FixtureRequest,
-    mailcatcher,
     http: requests.Session,
     ext_idp_service,
     identity_bundle,

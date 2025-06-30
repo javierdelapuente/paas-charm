@@ -115,6 +115,10 @@ requires:
     interface: openfga
     optional: True
     limit: 1
+  oauth:
+    interface: oauth
+    optional: True
+    limit: 1
 resources:
   app-image:
     description: ExpressJS application image.

@@ -133,6 +133,10 @@ requires:
     interface: openfga
     optional: True
     limit: 1
+  oauth:
+    interface: oauth
+    optional: True
+    limit: 1
 resources:
   django-app-image:
     description: django application image.

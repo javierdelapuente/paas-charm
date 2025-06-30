@@ -553,8 +553,8 @@ def external_idp_service_fixture():
 def deploy_identity_bundle_fixture(juju: jubilant.Juju):
     """Deploy rabbitmq-k8s app."""
 
-    juju.deploy("identity-platform", channel="latest/edge")
-    juju.refresh("identity-platform-login-ui-operator", revision=105, trust=True)
+    juju.deploy("identity-platform", channel="latest/edge", trust=True)
+    # juju.refresh("identity-platform-login-ui-operator", revision=105, trust=True)
     juju.wait(
         jubilant.all_active,
         timeout=30 * 60,

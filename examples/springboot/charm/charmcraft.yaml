@@ -130,6 +130,10 @@ requires:
     interface: mysql_client
     optional: True
     limit: 1
+  oauth:
+    interface: oauth
+    optional: True
+    limit: 1
 resources:
   app-image:
     description: Spring Boot application image.

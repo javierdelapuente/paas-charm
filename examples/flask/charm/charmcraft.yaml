@@ -173,6 +173,10 @@ requires:
     interface: openfga
     optional: True
     limit: 1
+  oauth:
+    interface: oauth
+    optional: True
+    limit: 1
 resources:
   flask-app-image:
     description: flask application image.
