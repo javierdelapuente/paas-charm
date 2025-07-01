@@ -5,6 +5,11 @@
 import logging
 
 import ops
+from charms.certificate_transfer_interface.v0.certificate_transfer import (
+    CertificateAvailableEvent,
+    CertificateRemovedEvent,
+    CertificateTransferRequires,
+)
 from pydantic import ConfigDict, Field, field_validator
 
 from paas_charm._gunicorn.charm import GunicornBase
@@ -76,3 +81,18 @@ class Charm(GunicornBase):
             framework: operator framework.
         """
         super().__init__(framework=framework, framework_name="flask")
+        self.trusted_cert_transfer = CertificateTransferRequires(self, "receive-ca-cert")
+        self.framework.observe(
+            self.trusted_cert_transfer.on.certificate_available, self._on_certificate_available
+        )
+        self.framework.observe(
+            self.trusted_cert_transfer.on.certificate_removed, self._on_certificate_removed
+        )
+
+    def _on_certificate_available(self, event: CertificateAvailableEvent):
+        logger.warning(f"{event.certificate=}")
+        logger.warning(f"{event.ca=}")
+        self._container.push("/flask/app/ca.crt", event.ca)
+
+    def _on_certificate_removed(self, event: CertificateRemovedEvent):
+        logger.warning(event.relation_id)

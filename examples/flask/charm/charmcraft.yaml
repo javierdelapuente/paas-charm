@@ -33,6 +33,8 @@ charm-libs:
   version: '0'
 - lib: hydra.oauth
   version: '0'
+- lib: certificate_transfer_interface.certificate_transfer
+  version: '0'
 
 actions:
   rotate-secret-key:
@@ -177,6 +179,13 @@ requires:
     interface: oauth
     optional: True
     limit: 1
+  receive-ca-cert:
+    interface: certificate_transfer
+    optional: true
+    description: |
+      Receive a CA cert for grafana to trust.
+      This relation can be used with a local CA to obtain the CA cert that was used to sign proxied
+      endpoints.
 resources:
   flask-app-image:
     description: flask application image.

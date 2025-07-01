@@ -302,8 +302,11 @@ def generate_oauth_env(relation_data: "OauthProviderConfig | None" = None) -> di
         Default Oauth environment mappings if OauthProviderConfig is available, empty
         dictionary otherwise.
     """
+    logger.warning(f"{relation_data=}")
     if not relation_data:
         return {}
+    logger.warning(f"{relation_data.client_id=}")
+    logger.warning(f"{relation_data.client_secret=}")
     return {
         k: v
         for k, v in (
@@ -313,7 +316,9 @@ def generate_oauth_env(relation_data: "OauthProviderConfig | None" = None) -> di
             ("OIDC_AUTH_URI", relation_data.authorization_endpoint),
             ("OIDC_TOKEN_URI", relation_data.token_endpoint),
             ("OIDC_USER_URI", relation_data.userinfo_endpoint),
-            ("OIDC_SCOPES", relation_data.scope),
+            ("OIDC_SCOPES", "openid profile email"),
+            ("REQUESTS_CA_BUNDLE", "/flask/app/ca.crt"),
+            ("SSL_CERT_FILE", "/flask/app/ca.crt"),
         )
         if v is not None
     }
@@ -472,7 +477,9 @@ class App:  # pylint: disable=too-many-instance-attributes
         env.update(self.generate_smtp_env(relation_data=self._charm_state.integrations.smtp))
         env.update(self.generate_tempo_env(relation_data=self._charm_state.integrations.tracing))
         env.update(self.generate_prometheus_env(self._workload_config))
+        logger.warning("START")
         env.update(self.generate_oauth_env(relation_data=self._charm_state.integrations.oauth))
+        logger.warning("END")
         return {prefix + k: v for (k, v) in env.items()}
 
     @property

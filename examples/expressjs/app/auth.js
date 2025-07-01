@@ -8,14 +8,14 @@ const OpenIDConnectStrategy = require('passport-openidconnect');
 const db = require('./database');
 
 passport.use(new OpenIDConnectStrategy({
-    issuer: process.env.OIDC_ISSUER,
-    authorizationURL: process.env.OIDC_AUTHORIZATION_URL,
-    tokenURL: process.env.OIDC_TOKEN_URL,
-    userInfoURL: process.env.OIDC_USERINFO_URL,
+    issuer: process.env.OIDC_BASE_URI,
+    authorizationURL: process.env.OIDC_AUTH_URI,
+    tokenURL: process.env.OIDC_TOKEN_URI,
+    userInfoURL: process.env.OIDC_USER_URI,
     clientID: process.env.OIDC_CLIENT_ID,
     clientSecret: process.env.OIDC_CLIENT_SECRET,
-    callbackURL: process.env.OIDC_CALLBACK_URL,
-    scope: 'openid profile'
+    callbackURL: `${process.env.APP_BASE_URL}/oauth/callback`,
+    scope: process.env.OIDC_SCOPES || 'openid profile'
   },
   function verify(issuer, profile, cb) {
     db.oneOrNone('SELECT * FROM users WHERE name = $1', [profile.displayName])

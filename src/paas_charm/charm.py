@@ -6,7 +6,6 @@ import abc
 import logging
 import pathlib
 import typing
-import urllib.parse
 
 import ops
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequiresEvent
@@ -126,7 +125,6 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
         self._tracing = self._init_tracing(requires)
         self._smtp = self._init_smtp(requires)
         self._openfga = self._init_openfga(requires)
-        self._oauth = self._init_oauth(requires)
 
         self._database_migration = DatabaseMigration(
             container=self.unit.get_container(self._workload_config.container_name),
@@ -138,6 +136,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             port=self._workload_config.port,
             strip_prefix=True,
         )
+        self._oauth = self._init_oauth(requires)
 
         self._observability = Observability(
             charm=self,
@@ -353,13 +352,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
                     return None
                 oauth = OAuthRequirer(self, client_config=client_config)
                 self.framework.observe(
-                    oauth._on_relation_created_event, self._on_openfga_store_created
-                )
-                self.framework.observe(
-                    oauth._on_relation_changed_event, self._on_openfga_store_created
-                )
-                self.framework.observe(
-                    oauth._on_relation_broken_event, self._on_openfga_store_created
+                    oauth.on.oauth_info_changed, self._on_openfga_store_created
                 )
             except NameError:
                 logger.exception(
@@ -370,16 +363,19 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
         return oauth
 
     def _get_oauth_client_config(self) -> ClientConfig:
-        public_uri = self._ingress.url
-        if not public_uri:
+        try:
+            public_uri = self._base_url
+            if not public_uri:
+                return None
+            callback_uri = f"{self._base_url}/callback"
+            
+            return ClientConfig(
+                callback_uri,
+                scope="openid profile email",
+                grant_types=["authorization_code"],
+            )
+        except AttributeError:
             return None
-        return ClientConfig(
-            urllib.parse.urljoin(public_uri, "/api/auth/oauth/oidc/callback"),
-            scope="openid profile email",
-            grant_types=["authorization_code"],
-            # this is not a secret
-            token_endpoint_auth_method="client_secret_post",  # nosec
-        )
 
     def get_framework_config(self) -> BaseModel:
         """Return the framework related configurations.
@@ -595,6 +591,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             return
         self._ingress.provide_ingress_requirements(port=self._workload_config.port)
         self.unit.set_ports(ops.Port(protocol="tcp", port=self._workload_config.port))
+        self._oauth.update_client_config(self._get_oauth_client_config())
         self.update_app_and_unit_status(ops.ActiveStatus())
 
     def _gen_environment(self) -> dict[str, str]:

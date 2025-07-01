@@ -17,8 +17,9 @@ import pymongo.database
 import pymysql
 import redis
 import urllib3
+from authlib.integrations.flask_client import OAuth
 from celery import Celery, Task
-from flask import Flask, g, jsonify, request
+from flask import Flask, Response, g, jsonify, redirect, request, session, url_for
 from flask_mail import Mail, Message
 from openfga_sdk import ClientConfiguration
 from openfga_sdk.credentials import CredentialConfiguration, Credentials
@@ -82,6 +83,23 @@ app = Flask(__name__)
 app.config.from_prefixed_env()
 mail = Mail(app) if init_smtp(app) else None
 
+
+app.config["FORCE_SCRIPT_NAME"] = "/jubilant-061ceb5a-flask-k8s"
+app.config["APPLICATION_ROOT"] = "/jubilant-061ceb5a-flask-k8s"
+# Use the APP_SECRET_KEY from your environment variables
+app.secret_key = os.getenv("FLASK_SECRET_KEY")  # <-- Enable this line!
+oauth = OAuth(app)
+
+# Construct the server metadata URL from the OIDC_BASE_URI
+server_metadata_url = f'{os.getenv("OIDC_BASE_URI", "").rstrip("/")}/.well-known/openid-configuration'
+oauth.register(
+    name='hydra',
+    client_id=os.getenv("OIDC_CLIENT_ID"),
+    client_secret=os.getenv("OIDC_CLIENT_SECRET"),
+    # This will automatically discover the authorize_url and other endpoints
+    server_metadata_url=server_metadata_url,
+    client_kwargs={'scope': os.getenv("OIDC_SCOPES", "openid profile email")},
+)
 broker_url = os.environ.get("REDIS_DB_CONNECT_STRING")
 # Configure Celery only if Redis is configured
 celery_app = celery_init_app(app, broker_url)
@@ -130,6 +148,56 @@ def send_mail():
         return "Sent"
     return "Mail not configured correctly"
 
+@app.route('/profile')
+def profile():
+    user = session.get('user')
+    uri = os.getenv("FLASK_BASE_URL").split("/")[-1]
+    html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile</title>
+</head>
+<body>
+    <h1>Welcome, {user.name}!</h1>
+    <p>Here is your user information:</p>
+    <pre>{user}</pre>
+    <p><a href="/{uri}/logout">Logout</a></p>
+</body>
+</html>
+    
+"""
+    return Response(html, mimetype='text/html')
+
+@app.route('/login')
+def login():
+    # Construct the callback URL from your FLASK_BASE_URL
+    redirect_uri = f'{os.getenv("FLASK_BASE_URL", "").rstrip("/")}/callback'
+    print(f"{redirect_uri=}")
+    # No need to specify authorize_url here; authlib will use the discovered one
+    return oauth.hydra.authorize_redirect(redirect_uri)
+
+@app.route('/callback')
+def callback():
+    token = oauth.hydra.authorize_access_token()
+    # Store the user information and the id_token for logout
+    session['user'] = token.get('userinfo')
+    session['id_token'] = token.get('id_token')
+    return redirect('/')
+
+@app.route('/logout')
+def logout():
+    # Get the id_token from the session to pass to Hydra
+    id_token = session.pop('id_token', None)
+    session.pop('user', None)
+
+    # Redirect to Hydra's logout endpoint
+    hydra_logout_url = (
+        f'{os.getenv("OIDC_BASE_URI", "").rstrip("/")}/oauth2/sessions/logout'
+        f'?id_token_hint={id_token}'
+        f'&post_logout_redirect_uri={url_for("index", _external=True)}'
+    )
+    return redirect(hydra_logout_url)
 
 @app.route("/openfga/list-authorization-models")
 def list_authorization_models():
