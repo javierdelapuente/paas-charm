@@ -305,18 +305,19 @@ def generate_oauth_env(relation_data: "OauthProviderConfig | None" = None) -> di
     logger.warning(f"{relation_data=}")
     if not relation_data:
         return {}
-    logger.warning(f"{relation_data.client_id=}")
-    logger.warning(f"{relation_data.client_secret=}")
+    logger.warning(f"{relation_data.scope=}")
+    logger.warning(f"{relation_data.ca_chain=}")
     return {
         k: v
         for k, v in (
-            ("OIDC_CLIENT_ID", relation_data.client_id),
-            ("OIDC_CLIENT_SECRET", relation_data.client_secret),
-            ("OIDC_BASE_URI", relation_data.issuer_url),
-            ("OIDC_AUTH_URI", relation_data.authorization_endpoint),
-            ("OIDC_TOKEN_URI", relation_data.token_endpoint),
-            ("OIDC_USER_URI", relation_data.userinfo_endpoint),
-            ("OIDC_SCOPES", "openid profile email"),
+            ("FLASK_OIDC_CLIENT_ID", relation_data.client_id),
+            ("FLASK_OIDC_CLIENT_SECRET", relation_data.client_secret),
+            ("FLASK_OIDC_API_BASE_URL", relation_data.issuer_url),
+            ("FLASK_OIDC_AUTHORIZE_URL", relation_data.authorization_endpoint),
+            ("FLASK_OIDC_ACCESS_TOKEN_URL", relation_data.token_endpoint),
+            # ("FLASK_OIDC_USER_URI", relation_data.userinfo_endpoint),
+            ("FLASK_OIDC_SCOPES",  "openid profile email"),
+            ("FLASK_OIDC_CA_CHAIN", relation_data.ca_chain),
             ("REQUESTS_CA_BUNDLE", "/flask/app/ca.crt"),
             ("SSL_CERT_FILE", "/flask/app/ca.crt"),
         )
