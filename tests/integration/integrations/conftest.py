@@ -555,8 +555,11 @@ def deploy_identity_bundle_fixture(juju: jubilant.Juju):
 
     juju.deploy("identity-platform", channel="latest/edge", trust=True)
     juju.remove_application("kratos-external-idp-integrator")
-    juju.wait(
-        jubilant.all_active,
-        timeout=30 * 60,
-    )
+    # juju.config("hydra",{"dev": True}) # lets us use non-https
+    juju.config("kratos",{"enforce_mfa": False})  # , "dev": True
+    # juju.remove_application("self-signed-certificates")
+    # juju.wait(
+    #     jubilant.all_active,
+    #     timeout=30 * 60,
+    # )
 
