@@ -26,20 +26,21 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
-    "app_fixture, port",
+    "app_fixture, port, endpoint",
     [
         # ("spring_boot_app", 8080),
         # ("expressjs_app", 8080),
         # ("fastapi_app", 8080),
         # ("go_app", 8080),
-        ("flask_app", 8000),
-        # ("django_app", 8000),
+        ("flask_app", 8000, "login"),
+        ("django_app", 8000, "auth_login"),
     ],
 )
 async def test_oidc_integrations(
     juju: jubilant.Juju,
     app_fixture: App,
     port,
+    endpoint,
     request: pytest.FixtureRequest,
     http: requests.Session,
     ext_idp_service,
@@ -70,9 +71,9 @@ async def test_oidc_integrations(
     # juju run kratos/0 reset-password email=test3@example.com password-secret-id=d1ifqhnmp25c77uf5gug
 
     res = json.loads(juju.run("traefik-public/0","show-proxied-endpoints").results["proxied-endpoints"])
-    app_url = res["flask-k8s"]["url"]
+    app_url = res[app.name]["url"]
 
-    page.goto(f'{app_url}/login')
+    page.goto(f'{app_url}/{endpoint}')
     # Fill an input.
     page.locator('#\\:r1\\:').fill('test@example.com')
     page.locator('#\\:r4\\:').fill('Testing1')
