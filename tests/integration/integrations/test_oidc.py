@@ -73,7 +73,7 @@ async def test_oidc_integrations(
     res = json.loads(juju.run("traefik-public/0","show-proxied-endpoints").results["proxied-endpoints"])
     app_url = res[app.name]["url"]
 
-    page.goto(f'{app_url}/{endpoint}')
+    await page.goto(f'{app_url}/{endpoint}')
     # Fill an input.
     page.locator('#\\:r1\\:').fill('test@example.com')
     page.locator('#\\:r4\\:').fill('Testing1')
