@@ -315,9 +315,9 @@ def generate_oauth_env(relation_data: "OauthProviderConfig | None" = None) -> di
             ("FLASK_OIDC_API_BASE_URL", relation_data.issuer_url),
             ("FLASK_OIDC_AUTHORIZE_URL", relation_data.authorization_endpoint),
             ("FLASK_OIDC_ACCESS_TOKEN_URL", relation_data.token_endpoint),
-            # ("FLASK_OIDC_USER_URI", relation_data.userinfo_endpoint),
-            ("FLASK_OIDC_SCOPES",  "openid profile email"),
-            ("FLASK_OIDC_CA_CHAIN", relation_data.ca_chain),
+            ("FLASK_OIDC_USER_URL", relation_data.userinfo_endpoint),
+            ("FLASK_OIDC_CLIENT_KWARGS",  '{"scope": "openid profile email"}'), # FLASK_OIDC_CLIENT_KWARGS_SCOPE
+            ("FLASK_OIDC_JWKS_URL",  relation_data.jwks_endpoint), # FLASK_OIDC_CLIENT_KWARGS_SCOPE
             ("REQUESTS_CA_BUNDLE", "/flask/app/ca.crt"),
             ("SSL_CERT_FILE", "/flask/app/ca.crt"),
         )

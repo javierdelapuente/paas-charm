@@ -90,16 +90,9 @@ app.config["APPLICATION_ROOT"] = os.getenv("FLASK_OIDC_API_BASE_URL")
 app.secret_key = os.getenv("FLASK_SECRET_KEY")  # <-- Enable this line!
 oauth = OAuth(app)
 
-# Construct the server metadata URL from the FLASK_OIDC_API_BASE_URL
-server_metadata_url = f'{os.getenv("FLASK_OIDC_API_BASE_URL", "").rstrip("/")}/.well-known/openid-configuration'
 oauth.register(
     name='oidc',
-    # client_id=os.getenv("OIDC_CLIENT_ID"),
-    # client_secret=os.getenv("OIDC_CLIENT_SECRET"),
-    # authorize_url=os.getenv("OIDC_AUTHORIZE_URL"),
-    # This will automatically discover the authorize_url and other endpoints
-    # server_metadata_url=server_metadata_url,
-    # client_kwargs={'scope': os.getenv("OIDC_SCOPES", "openid profile email")},
+    jwks_uri=os.getenv("FLASK_OIDC_JWKS_URL"),
 )
 
 broker_url = os.environ.get("REDIS_DB_CONNECT_STRING")
