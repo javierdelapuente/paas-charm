@@ -351,9 +351,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
                 if not client_config:
                     return None
                 oauth = OAuthRequirer(self, client_config=client_config)
-                self.framework.observe(
-                    oauth.on.oauth_info_changed, self._on_openfga_store_created
-                )
+                self.framework.observe(oauth.on.oauth_info_changed, self._on_openfga_store_created)
             except NameError:
                 logger.exception(
                     "Missing charm library, please run "
@@ -368,7 +366,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             if not public_uri:
                 return None
             callback_uri = f"{self._base_url}/callback"
-            
+
             return ClientConfig(
                 callback_uri,
                 scope="openid profile email",

@@ -292,7 +292,9 @@ def generate_prometheus_env(workload_config: WorkloadConfig) -> dict[str, str]:
     return {}
 
 
-def generate_oauth_env(framework: str, relation_data: "OauthProviderConfig | None" = None) -> dict[str, str]:
+def generate_oauth_env(
+    framework: str, relation_data: "OauthProviderConfig | None" = None
+) -> dict[str, str]:
     """Generate environment variable from OauthProviderConfig.
 
     Args:
@@ -313,8 +315,14 @@ def generate_oauth_env(framework: str, relation_data: "OauthProviderConfig | Non
             (f"{framework.upper()}_OIDC_AUTHORIZE_URL", relation_data.authorization_endpoint),
             (f"{framework.upper()}_OIDC_ACCESS_TOKEN_URL", relation_data.token_endpoint),
             (f"{framework.upper()}_OIDC_USER_URL", relation_data.userinfo_endpoint),
-            (f"{framework.upper()}_OIDC_CLIENT_KWARGS",  '{"scope": "openid profile email"}'), # FLASK_OIDC_CLIENT_KWARGS_SCOPE
-            (f"{framework.upper()}_OIDC_JWKS_URL",  relation_data.jwks_endpoint), # FLASK_OIDC_CLIENT_KWARGS_SCOPE
+            (
+                f"{framework.upper()}_OIDC_CLIENT_KWARGS",
+                '{"scope": "openid profile email"}',
+            ),  # FLASK_OIDC_CLIENT_KWARGS_SCOPE
+            (
+                f"{framework.upper()}_OIDC_JWKS_URL",
+                relation_data.jwks_endpoint,
+            ),  # FLASK_OIDC_CLIENT_KWARGS_SCOPE
             ("REQUESTS_CA_BUNDLE", f"/{framework}/app/ca.crt"),
             ("SSL_CERT_FILE", f"/{framework}/app/ca.crt"),
         )
@@ -476,7 +484,12 @@ class App:  # pylint: disable=too-many-instance-attributes
         env.update(self.generate_tempo_env(relation_data=self._charm_state.integrations.tracing))
         env.update(self.generate_prometheus_env(self._workload_config))
         logger.warning("START")
-        env.update(self.generate_oauth_env(framework=self._charm_state.framework, relation_data=self._charm_state.integrations.oauth))
+        env.update(
+            self.generate_oauth_env(
+                framework=self._charm_state.framework,
+                relation_data=self._charm_state.integrations.oauth,
+            )
+        )
         logger.warning("END")
         return {prefix + k: v for (k, v) in env.items()}
 

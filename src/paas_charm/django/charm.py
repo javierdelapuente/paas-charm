@@ -93,7 +93,6 @@ class Charm(GunicornBase):
         except:
             logger.warning("TLS RELATION EMPTY?")
 
-
     def _on_certificate_available(self, event: CertificateAvailableEvent):
         logger.warning(f"{event.certificate=}")
         logger.warning(f"{event.ca=}")

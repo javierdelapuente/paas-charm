@@ -91,7 +91,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY")  # <-- Enable this line!
 oauth = OAuth(app)
 
 oauth.register(
-    name='oidc',
+    name="oidc",
     jwks_uri=os.getenv("FLASK_OIDC_JWKS_URL"),
 )
 
@@ -143,9 +143,10 @@ def send_mail():
         return "Sent"
     return "Mail not configured correctly"
 
-@app.route('/profile')
+
+@app.route("/profile")
 def profile():
-    user = session.get('user')
+    user = session.get("user")
     print(f"{user=}")
     uri = os.getenv("FLASK_BASE_URL").split("/")[-1]
     html = f"""
@@ -163,9 +164,10 @@ def profile():
 </html>
     
 """
-    return Response(html, mimetype='text/html')
+    return Response(html, mimetype="text/html")
 
-@app.route('/login')
+
+@app.route("/login")
 def login():
     # Construct the callback URL from your FLASK_BASE_URL
     # redirect_uri = f'{os.getenv("FLASK_BASE_URL", "").rstrip("/")}/callback'
@@ -174,32 +176,35 @@ def login():
     print(f"{redirect_uri=}")
     return oauth.oidc.authorize_redirect(redirect_uri)
 
-@app.route('/callback')
+
+@app.route("/callback")
 def callback():
     print("callback")
     token = oauth.oidc.authorize_access_token()
     print(f"{token=}")
-        
+
     # Store the user information and the id_token for logout
-    session['user'] = token.get('userinfo')
+    session["user"] = token.get("userinfo")
     print(f"{session['user']=}")
-    session['id_token'] = token.get('id_token')
+    session["id_token"] = token.get("id_token")
     print(f"{session['id_token']=}")
     return redirect(f'{os.getenv("FLASK_BASE_URL", "").rstrip("/")}/profile')
 
-@app.route('/logout')
+
+@app.route("/logout")
 def logout():
     # Get the id_token from the session to pass to oidc
-    id_token = session.pop('id_token', None)
-    session.pop('user', None)
+    id_token = session.pop("id_token", None)
+    session.pop("user", None)
 
     # Redirect to oidc's logout endpoint
     oidc_logout_url = (
         f'{os.getenv("FLASK_OIDC_API_BASE_URL", "").rstrip("/")}/oauth2/sessions/logout'
-        f'?id_token_hint={id_token}'
+        f"?id_token_hint={id_token}"
         f'&post_logout_redirect_uri={os.getenv("FLASK_BASE_URL", "").rstrip("/")}/profile'
     )
     return redirect(oidc_logout_url)
+
 
 @app.route("/openfga/list-authorization-models")
 def list_authorization_models():

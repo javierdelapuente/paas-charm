@@ -26,18 +26,16 @@ from django.urls import reverse
 CONF_URL = f'{os.getenv("DJANGO_OIDC_API_BASE_URL")}/.well-known/openid-configuration'
 oauth = OAuth()
 oauth.register(
-    name='oidc',
-    server_metadata_url=CONF_URL,
-    client_kwargs={
-        'scope': 'openid email profile'
-    }
+    name="oidc", server_metadata_url=CONF_URL, client_kwargs={"scope": "openid email profile"}
 )
+
+
 def profile(request):
-    user = request.session.get('user')
+    user = request.session.get("user")
     # if user:
     #     user = json.dumps(user)
     print(f"{user=}")
-    uri = reverse('logout')
+    uri = reverse("logout")
     html = f"""
 <!DOCTYPE html>
 <html>
@@ -57,21 +55,22 @@ def profile(request):
 
 
 def auth_login(request):
-    redirect_uri = request.build_absolute_uri(reverse('callback')).rstrip("/")
+    redirect_uri = request.build_absolute_uri(reverse("callback")).rstrip("/")
     print(f"{redirect_uri=}")
     return oauth.oidc.authorize_redirect(request, redirect_uri)
 
 
 def callback(request):
     token = oauth.oidc.authorize_access_token(request)
-    request.session['user'] = token['userinfo']
-    return redirect(reverse('profile'))
+    request.session["user"] = token["userinfo"]
+    return redirect(reverse("profile"))
     # return redirect(f'{os.getenv("DJANGO_BASE_URL")}/profile')
 
 
 def logout(request):
-    request.session.pop('user', None)
-    return redirect('/')
+    request.session.pop("user", None)
+    return redirect("/")
+
 
 def send_mail(request):
     try:

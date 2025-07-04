@@ -139,11 +139,11 @@ FGA_STORE_ID = os.environ.get("FGA_STORE_ID")
 FGA_TOKEN = os.environ.get("FGA_TOKEN")
 FGA_HTTP_API_URL = os.environ.get("FGA_HTTP_API_URL")
 
-FORCE_SCRIPT_NAME = os.getenv('DJANGO_BASE_URL')
+FORCE_SCRIPT_NAME = os.getenv("DJANGO_BASE_URL")
 # AUTHLIB CLIENTS
 AUTHLIB_OAUTH_CLIENTS = {
-    'oidc': {
-        'client_id': os.getenv('DJANGO_OIDC_CLIENT_ID'),
-        'client_secret': os.getenv('DJANGO_OIDC_CLIENT_SECRET'),
+    "oidc": {
+        "client_id": os.getenv("DJANGO_OIDC_CLIENT_ID"),
+        "client_secret": os.getenv("DJANGO_OIDC_CLIENT_SECRET"),
     }
 }

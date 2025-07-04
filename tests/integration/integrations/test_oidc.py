@@ -6,6 +6,7 @@
 import json
 import logging
 import re
+from uuid import uuid4
 
 import pytest
 import requests
@@ -61,21 +62,35 @@ async def test_oidc_integrations(
         jubilant.all_active,
         timeout=30 * 60,
     )
-    create_account_res = juju.run("kratos/0","create-admin-account", {"email":"test@example.com", "password": "Testing1", "username":"admin"}).results
+    juju.run(
+        "kratos/0",
+        "create-admin-account",
+        {"email": "test@example.com", "password": "Testing1", "username": "admin"},
+    ).results
     # add secret password
-    secret_id = juju.add_secret("user-password", {"password": "Testing1"})
+    password_name = str(uuid4())
+    secret_id = juju.add_secret(password_name, {"password": "Testing1"})
     # grant secret to kratos
-    juju.cli("grant-secret",secret_id, "kratos" )
+    juju.cli("grant-secret", secret_id, "kratos")
     # run kratos action to reset password
-    juju.run("kratos/0", "reset-password", {"email": "test@example.com", "password-secret-id": secret_id.split(":")[-1]})
+    juju.run(
+        "kratos/0",
+        "reset-password",
+        {"email": "test@example.com", "password-secret-id": secret_id.split(":")[-1]},
+    )
     # juju run kratos/0 reset-password email=test3@example.com password-secret-id=d1ifqhnmp25c77uf5gug
 
-    res = json.loads(juju.run("traefik-public/0","show-proxied-endpoints").results["proxied-endpoints"])
+    res = json.loads(
+        juju.run("traefik-public/0", "show-proxied-endpoints").results["proxied-endpoints"]
+    )
     app_url = res[app.name]["url"]
 
-    await page.goto(f'{app_url}/{endpoint}')
+    await page.goto(f"{app_url}/{endpoint}")
     # Fill an input.
-    page.locator('#\\:r1\\:').fill('test@example.com')
-    page.locator('#\\:r4\\:').fill('Testing1')
+    page.locator("#\\:r1\\:").fill("test@example.com")
+    page.locator("#\\:r4\\:").fill("Testing1")
     page.get_by_role("button", name="Sign in").click()
     expect(page).to_have_url(re.compile(f"^{app_url}.*"))
+
+    # Cleanup
+    juju.run("kratos/0", "delete-identity", {"email": "test@example.com"})

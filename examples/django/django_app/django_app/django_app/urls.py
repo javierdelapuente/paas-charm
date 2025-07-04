@@ -48,7 +48,7 @@ urlpatterns = [
         name="list_authorization_models",
     ),
     path("login", login, name="login"),
-    path('profile/', profile, name='profile'),
-    path('auth_login', auth_login, name='auth_login'),
-    path('callback', callback, name='callback'),
+    path("profile/", profile, name="profile"),
+    path("auth_login", auth_login, name="auth_login"),
+    path("callback", callback, name="callback"),
 ]
