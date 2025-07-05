@@ -10,11 +10,10 @@ from uuid import uuid4
 
 import pytest
 import requests
-from playwright.async_api import expect
+from playwright.sync_api import expect, Page
 
 logger = logging.getLogger(__name__)
 
-pytest_plugins = ["oauth_tools.fixtures"]
 import logging
 
 import jubilant
@@ -26,10 +25,11 @@ from tests.integration.types import App
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.browser_context_args(ignore_https_errors=True)
 @pytest.mark.parametrize(
     "app_fixture, port, endpoint",
     [
-        # ("spring_boot_app", 8080),
+        ("spring_boot_app", 8080, "login"),
         # ("expressjs_app", 8080),
         # ("fastapi_app", 8080),
         # ("go_app", 8080),
@@ -37,17 +37,16 @@ logger = logging.getLogger(__name__)
         ("django_app", 8000, "auth_login"),
     ],
 )
-async def test_oidc_integrations(
+def test_oidc_integrations(
     juju: jubilant.Juju,
     app_fixture: App,
     port,
     endpoint,
     request: pytest.FixtureRequest,
     http: requests.Session,
-    ext_idp_service,
     identity_bundle,
     pytestconfig: pytest.Config,
-    page,
+    page: Page,
 ):
     """
     arrange: set up the test Juju model.
@@ -55,37 +54,53 @@ async def test_oidc_integrations(
     assert: the Penpot charm becomes active.
     """
     app = request.getfixturevalue(app_fixture)
-    juju.integrate(f"{app.name}", "traefik-public")
-    juju.integrate(f"{app.name}:oauth", "hydra")
-    juju.integrate(f"{app.name}:receive-ca-cert", "self-signed-certificates:send-ca-cert")
+    try:
+        juju.integrate(f"{app.name}", "traefik-public")
+    except jubilant.CLIError as err:
+        if "already exists" not in err.stderr:
+            raise err
+    
+    try:
+        juju.integrate(f"{app.name}:oauth", "hydra")
+    except jubilant.CLIError as err:
+        if "already exists" not in err.stderr:
+            raise err
+
+    try:
+        juju.integrate(f"{app.name}:receive-ca-cert", "self-signed-certificates:send-ca-cert")
+    except jubilant.CLIError as err:
+        if "already exists" not in err.stderr:
+            raise err
     juju.wait(
         jubilant.all_active,
         timeout=30 * 60,
     )
-    juju.run(
-        "kratos/0",
-        "create-admin-account",
-        {"email": "test@example.com", "password": "Testing1", "username": "admin"},
-    ).results
+    try:
+        create_account_res = juju.run("kratos/0","create-admin-account", {"email":"test@example.com", "password": "Testing1", "username":"admin"})
+        logger.info("JAVI create_account_res %s", create_account_res)
+        logger.info("JAVI create_account_res %s", create_account_res.results)
+    except jubilant.TaskError as err:
+        logger.info("JAVI error create_account_res %s", err)
+
     # add secret password
-    password_name = str(uuid4())
-    secret_id = juju.add_secret(password_name, {"password": "Testing1"})
-    # grant secret to kratos
-    juju.cli("grant-secret", secret_id, "kratos")
-    # run kratos action to reset password
-    juju.run(
-        "kratos/0",
-        "reset-password",
-        {"email": "test@example.com", "password-secret-id": secret_id.split(":")[-1]},
-    )
-    # juju run kratos/0 reset-password email=test3@example.com password-secret-id=d1ifqhnmp25c77uf5gug
+    try:
+        secret_id = juju.add_secret("user-password", {"password": "Testing1"})
+        # grant secret to kratos
+        juju.cli("grant-secret",secret_id, "kratos" )
+        # run kratos action to reset password
+        reset_password_res = juju.run("kratos/0", "reset-password", {"email": "test@example.com", "password-secret-id": secret_id.split(":")[-1]})
+        logger.info("JAVI reset_password_res %s", reset_password_res)
+        logger.info("JAVI reset_password_res %s", reset_password_res.results)
+        # juju run kratos/0 reset-password email=test3@example.com password-secret-id=d1ifqhnmp25c77uf5gug
+    except jubilant.CLIError as err:
+        logger.info("JAVI error add-secret %s", err)
 
     res = json.loads(
         juju.run("traefik-public/0", "show-proxied-endpoints").results["proxied-endpoints"]
     )
     app_url = res[app.name]["url"]
-
-    await page.goto(f"{app_url}/{endpoint}")
+    page.goto(f'{app_url}/{endpoint}')
+    logger.info(f'GO TO: {app_url}/{endpoint}')
     # Fill an input.
     page.locator("#\\:r1\\:").fill("test@example.com")
     page.locator("#\\:r4\\:").fill("Testing1")

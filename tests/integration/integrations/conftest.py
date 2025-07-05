@@ -545,11 +545,9 @@ def deploy_rabbitmq_k8s_fixture(juju: jubilant.Juju) -> App:
     )
     return rabbitmq_k8s
 
-
 @pytest.fixture(scope="module", name="ext_idp_service")
 def external_idp_service_fixture():
     return None
-
 
 @pytest.fixture(scope="module", name="identity_bundle")
 def deploy_identity_bundle_fixture(juju: jubilant.Juju):

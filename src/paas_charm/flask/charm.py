@@ -98,7 +98,7 @@ class Charm(GunicornBase):
                         # Note: this nested loop handles the case of multi-unit CA, each unit providing
                         # a different ca cert, but that is not currently supported by the lib itself.
                         if cert := relation.data[unit].get("ca"):
-                            self._container.push("/flask/app/ca.crt", cert)
+                            self._container.push("/app/ca.crt", cert)
         except:
             logger.warning("TLS RELATION EMPTY?")
 
@@ -106,6 +106,7 @@ class Charm(GunicornBase):
         logger.warning(f"{event.certificate=}")
         logger.warning(f"{event.ca=}")
         self._container.push("/flask/app/ca.crt", event.ca)
+        # self.restart()
 
     def _on_certificate_removed(self, event: CertificateRemovedEvent):
         logger.warning(event.relation_id)

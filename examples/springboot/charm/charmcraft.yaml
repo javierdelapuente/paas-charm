@@ -39,6 +39,8 @@ charm-libs:
   version: '0'
 - lib: hydra.oauth
   version: '0'
+- lib: certificate_transfer_interface.certificate_transfer
+  version: '0'
 
 actions:
   rotate-secret-key:

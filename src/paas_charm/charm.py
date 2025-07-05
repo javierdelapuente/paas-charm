@@ -575,6 +575,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
         Args:
             rerun_migrations: whether it is necessary to run the migrations again.
         """
+        logger.info("JAVI on restart")
         if not self.is_ready():
             return
 
@@ -589,6 +590,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             return
         self._ingress.provide_ingress_requirements(port=self._workload_config.port)
         self.unit.set_ports(ops.Port(protocol="tcp", port=self._workload_config.port))
+        logger.info("JAVI oauth before updating client config. %s", self._get_oauth_client_config())
         self._oauth.update_client_config(self._get_oauth_client_config())
         self.update_app_and_unit_status(ops.ActiveStatus())
 

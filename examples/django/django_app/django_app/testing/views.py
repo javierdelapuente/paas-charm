@@ -4,6 +4,7 @@
 import os
 import time
 
+import logging
 import urllib3
 from django.conf import settings
 from django.contrib.auth import authenticate
