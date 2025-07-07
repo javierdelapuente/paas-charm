@@ -9,10 +9,9 @@ import typing
 from urllib.parse import urlparse
 
 import ops
+from charms.hydra.v0.oauth import OauthProviderConfig
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateAvailableEvent,
-    CertificateRemovedEvent,
-    CertificateTransferRequires,
 )
 from pydantic import ConfigDict, Field
 
@@ -298,6 +297,78 @@ def generate_tempo_env(relation_data: "PaaSTracingRelationData | None" = None) -
     }
 
 
+def generate_oauth_env(
+    framework: str, base_url: str | None, relation_data: "OauthProviderConfig | None" = None
+) -> dict[str, str]:
+    """Generate environment variable from OauthProviderConfig.
+
+    Args:
+        framework: TODO
+        base_url: TODO
+        relation_data: The charm Oauth integration relation data.
+
+    Returns:
+        Default Oauth environment mappings if OauthProviderConfig is available, empty
+        dictionary otherwise.
+    """
+    if not relation_data:
+        return {}
+    env = {
+        k: v
+        for k, v in (
+            (f"{framework.upper()}_OIDC_CLIENT_ID", relation_data.client_id),
+            (f"{framework.upper()}_OIDC_CLIENT_SECRET", relation_data.client_secret),
+            (f"{framework.upper()}_OIDC_API_BASE_URL", relation_data.issuer_url),
+            (f"{framework.upper()}_OIDC_AUTHORIZE_URL", relation_data.authorization_endpoint),
+            (f"{framework.upper()}_OIDC_ACCESS_TOKEN_URL", relation_data.token_endpoint),
+            (f"{framework.upper()}_OIDC_USER_URL", relation_data.userinfo_endpoint),
+            (
+                f"{framework.upper()}_OIDC_CLIENT_KWARGS",
+                '{"scope": "openid profile email"}',
+            ),  # FLASK_OIDC_CLIENT_KWARGS_SCOPE
+            (
+                f"{framework.upper()}_OIDC_JWKS_URL",
+                relation_data.jwks_endpoint,
+            ),  # FLASK_OIDC_CLIENT_KWARGS_SCOPE
+            ("REQUESTS_CA_BUNDLE", f"/{framework}/app/ca.crt"),
+            ("SSL_CERT_FILE", f"/{framework}/app/ca.crt"),
+        )
+        if v is not None
+    } 
+    # https://docs.spring.io/spring-security/reference/servlet/oauth2/login/core.html#oauth2login-sample-initial-setupclientAuthenticationMethod
+    env["spring.security.oauth2.client.registration.hydra.client-id"] = (
+        relation_data.client_id
+    )
+    env["spring.security.oauth2.client.registration.hydra.client-secret"] = (
+        relation_data.client_secret
+    )
+    # env["spring.security.oauth2.client.registration.hydra.provider"] = "hydra"
+    env["spring.security.oauth2.client.registration.hydra.scope"] = "openid,profile,email"
+    env["spring.security.oauth2.client.registration.hydra.authorization-grant-type"] = (
+        "authorization_code"
+    )
+    env["spring.security.oauth2.client.registration.hydra.redirect-uri"] = (
+        f"{base_url}/callback"
+    )
+    env["spring.security.oauth2.client.provider.hydra.authorization-uri"] = (
+        relation_data.authorization_endpoint
+    )
+    env["spring.security.oauth2.client.provider.hydra.token-uri"] = relation_data.token_endpoint
+    env["spring.security.oauth2.client.registration.hydra.user-name-attribute"] = "sub"
+    # to use the userinfo endpoint
+    env["spring.security.oauth2.client.provider.hydra.user-name-attribute"] = "sub"
+    env["spring.security.oauth2.client.provider.hydra.user-info-uri"] = (
+       relation_data.userinfo_endpoint
+    )
+
+    env["spring.security.oauth2.client.provider.hydra.jwk-set-uri"] = relation_data.jwks_endpoint
+    # env["spring.security.oauth2.client.provider.hydra.issuer-uri"] = relation_data.issuer_url
+    env["logging.level.org.springframework.security"] = "DEBUG"
+    env["LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY"] = "DEBUG"
+    env["server.forward-headers-strategy"] = "framework"
+    return env
+
+
 class SpringBootApp(App):
     """Spring Boot application with custom environment variable mappers.
 
@@ -311,6 +382,7 @@ class SpringBootApp(App):
         generate_smtp_env: Maps STMP connection information to environment variables.
         generate_tempo_env: Maps Tracing connection information to environment variables.
         generate_prometheus_env: Maps Prometheus connection information to environment variables.
+        generate_prometheus_env: TODO.
     """
 
     generate_db_env = staticmethod(generate_db_env)
@@ -322,6 +394,7 @@ class SpringBootApp(App):
     generate_smtp_env = staticmethod(generate_smtp_env)
     generate_tempo_env = staticmethod(generate_tempo_env)
     generate_prometheus_env = staticmethod(generate_prometheus_env)
+    generate_oauth_env = staticmethod(generate_oauth_env)
 
 
 class Charm(PaasCharm):
@@ -340,37 +413,29 @@ class Charm(PaasCharm):
             framework: operator framework.
         """
         super().__init__(framework=framework, framework_name="spring-boot")
-        self.trusted_cert_transfer = CertificateTransferRequires(self, "receive-ca-cert")
-        self.framework.observe(
-            self.trusted_cert_transfer.on.certificate_available, self._on_certificate_available
-        )
-        self.framework.observe(
-            self.trusted_cert_transfer.on.certificate_removed, self._on_certificate_removed
-        )
-        rel_name = self.trusted_cert_transfer.relationship_name
-        _cert_relation = self.model.get_relation(relation_name=rel_name)
-        try:
-            if self.trusted_cert_transfer.is_ready(_cert_relation):
-                for relation in self.model.relations.get(rel_name, []):
-                    # For some reason, relation.units includes our unit and app. Need to exclude them.
-                    for unit in set(relation.units).difference([self.app, self.unit]):
-                        # Note: this nested loop handles the case of multi-unit CA, each unit providing
-                        # a different ca cert, but that is not currently supported by the lib itself.
-                        if cert := relation.data[unit].get("ca"):
-                            self._container.push("/flask/app/ca.crt", cert)
-        except:
-            logger.warning("TLS RELATION EMPTY?")
-
-
-    def _on_certificate_available(self, event: CertificateAvailableEvent):
-        logger.warning(f"{event.certificate=}")
-        logger.warning(f"{event.ca=}")
-        self._container.push("/flask/app/ca.crt", event.ca)
-
-
-    def _on_certificate_removed(self, event: CertificateRemovedEvent):
-        logger.warning(event.relation_id)
-
+        # self.trusted_cert_transfer = CertificateTransferRequires(self, "receive-ca-cert")
+        # self.framework.observe(
+        #     self.trusted_cert_transfer.on.certificate_available, self._on_certificate_available
+        # )
+        # self.framework.observe(
+        #     self.trusted_cert_transfer.on.certificate_removed, self._on_certificate_removed
+        # )
+        # rel_name = self.trusted_cert_transfer.relationship_name
+        # _cert_relation = self.model.get_relation(relation_name=rel_name)
+        # try:
+        #     if self.trusted_cert_transfer.is_ready(_cert_relation):
+        #         for relation in self.model.relations.get(rel_name, []):
+        #             # For some reason, relation.units includes our unit and app.
+        #             # Need to exclude them.
+        #             for unit in set(relation.units).difference([self.app, self.unit]):
+        #                 # Note: this nested loop handles the case of multi-unit CA,
+        #                 # each unit providing
+        #                 # a different ca cert, but that is not currently supported
+        #                 # by the lib itself.
+        #                 if cert := relation.data[unit].get("ca"):
+        #                     self._container.push("/flask/app/ca.crt", cert)
+        # except:
+        #     logger.warning("TLS RELATION EMPTY?")
 
     @property
     def _workload_config(self) -> WorkloadConfig:
@@ -422,3 +487,8 @@ class Charm(PaasCharm):
             Return the directory with COS related files.
         """
         return str((pathlib.Path(__file__).parent / "cos").absolute())
+
+    def _on_certificate_available(self, event: CertificateAvailableEvent) -> None:
+        """TODO."""
+        self._container.push("/app/ca.crt", event.ca)
+        super()._on_certificate_available(event)

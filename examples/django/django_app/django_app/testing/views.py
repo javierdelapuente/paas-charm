@@ -1,10 +1,10 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import logging
 import os
 import time
 
-import logging
 import urllib3
 from django.conf import settings
 from django.contrib.auth import authenticate

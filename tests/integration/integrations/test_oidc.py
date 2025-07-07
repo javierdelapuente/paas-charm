@@ -10,11 +10,14 @@ from uuid import uuid4
 
 import pytest
 import requests
-from playwright.sync_api import expect, Page
+from playwright.sync_api import Page, expect
 
 logger = logging.getLogger(__name__)
 
 import logging
+import random
+import secrets
+import string
 
 import jubilant
 import pytest
@@ -59,7 +62,7 @@ def test_oidc_integrations(
     except jubilant.CLIError as err:
         if "already exists" not in err.stderr:
             raise err
-    
+
     try:
         juju.integrate(f"{app.name}:oauth", "hydra")
     except jubilant.CLIError as err:
@@ -76,7 +79,11 @@ def test_oidc_integrations(
         timeout=30 * 60,
     )
     try:
-        create_account_res = juju.run("kratos/0","create-admin-account", {"email":"test@example.com", "password": "Testing1", "username":"admin"})
+        create_account_res = juju.run(
+            "kratos/0",
+            "create-admin-account",
+            {"email": "test@example.com", "password": "Testing1", "username": "admin"},
+        )
         logger.info("JAVI create_account_res %s", create_account_res)
         logger.info("JAVI create_account_res %s", create_account_res.results)
     except jubilant.TaskError as err:
@@ -84,11 +91,18 @@ def test_oidc_integrations(
 
     # add secret password
     try:
-        secret_id = juju.add_secret("user-password", {"password": "Testing1"})
+        secret_name = "user-password-" + "".join(
+            random.choice(string.ascii_lowercase) for _ in range(3)
+        )
+        secret_id = juju.add_secret(secret_name, {"password": "Testing1"})
         # grant secret to kratos
-        juju.cli("grant-secret",secret_id, "kratos" )
+        juju.cli("grant-secret", secret_id, "kratos")
         # run kratos action to reset password
-        reset_password_res = juju.run("kratos/0", "reset-password", {"email": "test@example.com", "password-secret-id": secret_id.split(":")[-1]})
+        reset_password_res = juju.run(
+            "kratos/0",
+            "reset-password",
+            {"email": "test@example.com", "password-secret-id": secret_id.split(":")[-1]},
+        )
         logger.info("JAVI reset_password_res %s", reset_password_res)
         logger.info("JAVI reset_password_res %s", reset_password_res.results)
         # juju run kratos/0 reset-password email=test3@example.com password-secret-id=d1ifqhnmp25c77uf5gug
@@ -99,8 +113,8 @@ def test_oidc_integrations(
         juju.run("traefik-public/0", "show-proxied-endpoints").results["proxied-endpoints"]
     )
     app_url = res[app.name]["url"]
-    page.goto(f'{app_url}/{endpoint}')
-    logger.info(f'GO TO: {app_url}/{endpoint}')
+    page.goto(f"{app_url}/{endpoint}")
+    logger.info(f"GO TO: {app_url}/{endpoint}")
     # Fill an input.
     page.locator("#\\:r1\\:").fill("test@example.com")
     page.locator("#\\:r4\\:").fill("Testing1")

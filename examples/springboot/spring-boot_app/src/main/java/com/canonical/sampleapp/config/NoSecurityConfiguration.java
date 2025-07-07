@@ -19,6 +19,11 @@ import org.springframework.security.web.SecurityFilterChain;
     matchIfMissing = true,
     havingValue = "false"
 )
+@ConditionalOnProperty(
+	    name = "spring.security.oauth2.client.registration.hydra.client-id",
+	    matchIfMissing = true,
+	    havingValue = "false"
+	)
 public class NoSecurityConfiguration {
     @Bean
     public SecurityFilterChain permitAllSecurityFilterChain(HttpSecurity http) throws Exception {

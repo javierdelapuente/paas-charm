@@ -293,11 +293,13 @@ def generate_prometheus_env(workload_config: WorkloadConfig) -> dict[str, str]:
 
 
 def generate_oauth_env(
-    framework: str, relation_data: "OauthProviderConfig | None" = None
+    framework: str, base_url: str | None, relation_data: "OauthProviderConfig | None" = None
 ) -> dict[str, str]:
     """Generate environment variable from OauthProviderConfig.
 
     Args:
+        framework: TODO
+        base_url: TODO
         relation_data: The charm Oauth integration relation data.
 
     Returns:
@@ -345,6 +347,7 @@ class App:  # pylint: disable=too-many-instance-attributes
         generate_smtp_env: Maps STMP connection information to environment variables.
         generate_tempo_env: Maps tempo tracing connection information to environment variables.
         generate_prometheus_env: Maps prometheus connection information to environment variables.
+        generate_oauth_env: TODO
     """
 
     generate_db_env = staticmethod(generate_db_env)
@@ -487,6 +490,7 @@ class App:  # pylint: disable=too-many-instance-attributes
         env.update(
             self.generate_oauth_env(
                 framework=self._charm_state.framework,
+                base_url=self._charm_state.base_url,
                 relation_data=self._charm_state.integrations.oauth,
             )
         )

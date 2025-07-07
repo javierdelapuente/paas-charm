@@ -148,6 +148,21 @@
 			<artifactId>bcprov-jdk18on</artifactId>
 			<version>1.78.1</version>
 		</dependency>
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bcpkix-jdk18on</artifactId>
+  <version>1.78.1</version>
+</dependency>
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bcpg-jdk18on</artifactId>
+  <version>1.78.1</version>
+</dependency>
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bctls-jdk18on</artifactId>
+  <version>1.78.1</version>
+</dependency>
 		 <dependency>
 			<groupId>io.opentelemetry.instrumentation</groupId>
 			<artifactId>opentelemetry-spring-boot-starter</artifactId>
@@ -171,14 +186,17 @@
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
-<dependency>
-	<groupId>org.springframework.security</groupId>
-	<artifactId>spring-security-core</artifactId>
-</dependency>
-		
+		<dependency>
+		  <groupId>org.springframework.boot</groupId>
+		  <artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+		  <groupId>org.springframework.security</groupId>
+		  <artifactId>spring-security-core</artifactId>
+		</dependency>
   		<dependency>
-    		<groupId>org.springframework.boot</groupId>
-    		<artifactId>spring-boot-starter-oauth2-client</artifactId>
+    		  <groupId>org.springframework.boot</groupId>
+    		  <artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
   		<dependency>
   			<groupId>org.springframework.boot</groupId>
@@ -198,6 +216,10 @@
 							<artifactId>lombok</artifactId>
 						</path>
 					</annotationProcessorPaths>
+    <compilerArgs>
+      <arg>--module-path</arg>
+      <arg>${project.build.outputDirectory}</arg>
+    </compilerArgs>					
 				</configuration>
 			</plugin>
 			<plugin>

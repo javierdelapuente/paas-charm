@@ -8,6 +8,11 @@ import pathlib
 import typing
 
 import ops
+from charms.certificate_transfer_interface.v0.certificate_transfer import (
+    CertificateAvailableEvent,
+    CertificateRemovedEvent,
+    CertificateTransferRequires,
+)
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequiresEvent
 from charms.hydra.v0.oauth import ClientConfig, OAuthRequirer
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
@@ -137,6 +142,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             strip_prefix=True,
         )
         self._oauth = self._init_oauth(requires)
+        self._trusted_cert_transfer = self._init_trusted_cert_transfer(requires)
 
         self._observability = Observability(
             charm=self,
@@ -343,7 +349,8 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
                 )
         return openfga
 
-    def _init_oauth(self, requires):
+    def _init_oauth(self, requires: dict[str, RelationMeta]) -> "OAuthRequirer | None":
+        """TODO."""
         oauth = None
         if "oauth" in requires and requires["oauth"].interface_name == "oauth":
             try:
@@ -351,7 +358,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
                 if not client_config:
                     return None
                 oauth = OAuthRequirer(self, client_config=client_config)
-                self.framework.observe(oauth.on.oauth_info_changed, self._on_openfga_store_created)
+                self.framework.observe(oauth.on.oauth_info_changed, self._on_oauth_info_changed)
             except NameError:
                 logger.exception(
                     "Missing charm library, please run "
@@ -360,7 +367,27 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
 
         return oauth
 
+    def _init_trusted_cert_transfer(
+        self, requires: dict[str, RelationMeta]
+    ) -> "CertificateTransferRequires | None":
+        """TODO."""
+        trusted_cert_transfer = None
+        if (
+            "receive-ca-cert" in requires
+            and requires["receive-ca-cert"].interface_name == "certificate_transfer"
+        ):
+            trusted_cert_transfer = CertificateTransferRequires(self, "receive-ca-cert")
+            self.framework.observe(
+                trusted_cert_transfer.on.certificate_available, self._on_certificate_available
+            )
+            self.framework.observe(
+                trusted_cert_transfer.on.certificate_removed, self._on_certificate_removed
+            )
+            # JAVI THE REST.
+        return trusted_cert_transfer
+
     def _get_oauth_client_config(self) -> ClientConfig:
+        """TODO."""
         try:
             public_uri = self._base_url
             if not public_uri:
@@ -590,8 +617,11 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             return
         self._ingress.provide_ingress_requirements(port=self._workload_config.port)
         self.unit.set_ports(ops.Port(protocol="tcp", port=self._workload_config.port))
-        logger.info("JAVI oauth before updating client config. %s", self._get_oauth_client_config())
-        self._oauth.update_client_config(self._get_oauth_client_config())
+        if self._oauth:
+            logger.info(
+                "JAVI oauth before updating client config. %s", self._get_oauth_client_config()
+            )
+            self._oauth.update_client_config(self._get_oauth_client_config())
         self.update_app_and_unit_status(ops.ActiveStatus())
 
     def _gen_environment(self) -> dict[str, str]:
@@ -770,4 +800,23 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
     @block_if_invalid_config
     def _on_openfga_store_created(self, _: ops.HookEvent) -> None:
         """Handle openfga store created event."""
+        self.restart()
+
+    @block_if_invalid_config
+    def _on_oauth_info_changed(self, ev: ops.HookEvent) -> None:
+        """TODO."""
+        logger.info("JAVI _on_oauth_info_changed ev %s", ev)
+        self.restart()
+
+    @block_if_invalid_config
+    def _on_certificate_available(self, event: CertificateAvailableEvent) -> None:
+        """TODO."""
+        logger.warning("JAVI event.cerfiticate %s", event.certificate)
+        logger.warning("JAVI event.ca %s", event.ca)
+        self.restart()
+
+    @block_if_invalid_config
+    def _on_certificate_removed(self, event: CertificateRemovedEvent) -> None:
+        """TODO."""
+        logger.warning("JAVI on certificate removed, relationid %s", event.relation_id)
         self.restart()

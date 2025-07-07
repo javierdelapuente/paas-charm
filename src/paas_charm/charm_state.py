@@ -276,6 +276,7 @@ class IntegrationRequirers:  # pylint: disable=too-many-instance-attributes
         tracing: TracingEndpointRequire object.
         smtp: Smtp requirer object.
         openfga: OpenFGA requirer object.
+        oauth: TODO.
     """
 
     databases: dict[str, "PaaSDatabaseRequires"]
@@ -304,6 +305,7 @@ class IntegrationsState:  # pylint: disable=too-many-instance-attributes
         saml: SAML parameters.
         smtp: SMTP parameters.
         tracing: Tracing relation data.
+        oauth: TODO.
     """
 
     databases_relation_data: dict[str, "PaaSDatabaseRelationData"] = field(default_factory=dict)
