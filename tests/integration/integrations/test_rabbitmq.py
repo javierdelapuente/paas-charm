@@ -37,7 +37,7 @@ def test_rabbitmq_server_integration(
     try:
         juju.integrate(app.name, rabbitmq_app.name)
         juju.wait(
-            lambda status: jubilant.all_active(status, app.name, rabbitmq_app.name),
+            lambda status: jubilant.all_active(status, app.name),
             timeout=(10 * 60),
             delay=30,
         )
