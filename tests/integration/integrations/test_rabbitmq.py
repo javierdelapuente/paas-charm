@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
     [
         ("flask_app", 8000, "rabbitmq_server_app"),
         ("flask_app", 8000, "rabbitmq_k8s_app"),
+        ("spring_boot_app", 8080, "rabbitmq_k8s_app"),
     ],
 )
 def test_rabbitmq_server_integration(
@@ -26,8 +27,8 @@ def test_rabbitmq_server_integration(
     request: pytest.FixtureRequest,
 ):
     """
-    arrange: Flask and rabbitmq deployed
-    act: Integrate flask with rabbitmq
+    arrange: The app and rabbitmq deployed
+    act: Integrate the app with rabbitmq
     assert: Assert that RabbitMQ works correctly
     """
     app = request.getfixturevalue(app_fixture)
