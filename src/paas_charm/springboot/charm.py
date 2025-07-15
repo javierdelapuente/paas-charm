@@ -150,7 +150,6 @@ def generate_rabbitmq_env(
     if not relation_data:
         return {}
     return {
-        # "spring.rabbitmq.addresses": relation_data.amqp_uri,
         "spring.rabbitmq.virtual-host": relation_data.vhost,
         "spring.rabbitmq.username": relation_data.username,
         "spring.rabbitmq.password": relation_data.password,

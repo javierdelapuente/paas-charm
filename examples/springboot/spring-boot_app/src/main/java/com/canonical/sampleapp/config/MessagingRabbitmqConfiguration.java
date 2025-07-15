@@ -9,18 +9,17 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(name = "spring.rabbitmq.host")
 @Configuration
 public class MessagingRabbitmqConfiguration {
-	  static final String topicExchangeName = "";
-	  static final String queueName = "charm";
+	static final String topicExchangeName = "";
+	static final String queueName = "charm";
 
-	  @Bean
-	  Queue queue() {
-	    return new Queue(queueName, false);
-	  }
+	@Bean
+	Queue queue() {
+		return new Queue(queueName, false);
+	}
 
-	  @Bean
-	  TopicExchange exchange() {
-	    return new TopicExchange(topicExchangeName);
-	  }
-
+	@Bean
+	TopicExchange exchange() {
+		return new TopicExchange(topicExchangeName);
+	}
 
 }

@@ -12,26 +12,25 @@ import org.springframework.amqp.core.Queue;
 @Component
 public class MessageService {
 
-    private RabbitTemplate template;
+	private RabbitTemplate template;
 
-    private Queue queue;
+	private Queue queue;
 
-    MessageService(Queue queue, RabbitTemplate template) {
-        this.queue = queue;
-        this.template = template;
-    }
-    
-    public void send(String message) {
-        this.template.convertAndSend(queue.getName(), message);
-        System.out.println(" [x] Sent '" + message + "'");
-    }
+	MessageService(Queue queue, RabbitTemplate template) {
+		this.queue = queue;
+		this.template = template;
+	}
 
-    @Nullable
-    public String receive() {
-    	Message message = this.template.receive(queue.getName());
-    	if (message == null) {
-    		return null;
-    	}
-        return new String(message.getBody());
-    }
+	public void send(String message) {
+		this.template.convertAndSend(queue.getName(), message);
+	}
+
+	@Nullable
+	public String receive() {
+		Message message = this.template.receive(queue.getName());
+		if (message == null) {
+			return null;
+		}
+		return new String(message.getBody());
+	}
 }

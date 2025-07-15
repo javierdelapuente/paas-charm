@@ -40,7 +40,7 @@ def test_rabbitmq_server_integration(
         status = juju.status()
         unit_ip = status.apps[app.name].units[app.name + "/0"].address
 
-        response = requests.get(f"http://{unit_ip}:{port}/rabbitmq/send", timeout=5)
+        response = requests.post(f"http://{unit_ip}:{port}/rabbitmq/send", timeout=5)
         assert response.status_code == 200
         assert "SUCCESS" == response.text
 
