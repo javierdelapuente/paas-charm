@@ -191,13 +191,16 @@ class RabbitMQRequires(Object):
         if not self._rabbitmq_rel:
             return None
         for unit in self._rabbitmq_rel.units:
-            unit_data = self._rabbitmq_rel.data[unit]
-            # All of the passwords should be equal. If it is
-            # in the unit data, get it and override the password
-            hostname = unit_data.get("hostname", None)
-            password = unit_data.get("password", None)
-            if hostname and password:
-                return Credentials(hostname, password)
+            try:
+                unit_data = self._rabbitmq_rel.data[unit]
+                # All of the passwords should be equal. If it is
+                # in the unit data, get it and override the password
+                hostname = unit_data.get("hostname", None)
+                password = unit_data.get("password", None)
+                if hostname and password:
+                    return Credentials(hostname, password)
+            except KeyError:
+                logger.exception("Error getting unit data that should exist.")
         return None
 
     @property
