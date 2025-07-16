@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MessagingRabbitmqConfiguration {
 	static final String topicExchangeName = "";
-	static final String queueName = "charm";
+	static final String queueName = "sampleapp";
 
 	@Bean
 	Queue queue() {
