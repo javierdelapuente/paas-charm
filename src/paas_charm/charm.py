@@ -26,7 +26,11 @@ from paas_charm.openfga import STORE_NAME
 from paas_charm.rabbitmq import RabbitMQRequires
 from paas_charm.redis import PaaSRedisRequires
 from paas_charm.secret_storage import KeySecretStorage
-from paas_charm.utils import build_validation_error_message, config_get_with_secret
+from paas_charm.utils import (
+    build_validation_error_message,
+    config_get_with_secret,
+    get_endpoints_by_interface_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +76,14 @@ try:
 except ImportError:
     logger.warning(
         "Missing charm library, please run `charmcraft fetch-lib charms.openfga_k8s.v1.openfga`"
+    )
+
+try:
+    # pylint: disable=ungrouped-imports
+    from paas_charm.oauth import PaaSOAuthRequirer
+except ImportError:
+    logger.warning(
+        "Missing charm library, please run `charmcraft fetch-lib charms.hydra_k8s.v0.oauth`"
     )
 
 
@@ -135,6 +147,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             port=self._workload_config.port,
             strip_prefix=True,
         )
+        self._oauth = self._init_oauth(requires)
 
         self._observability = Observability(
             charm=self,
@@ -341,6 +354,35 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
                 )
         return openfga
 
+    def _init_oauth(self, requires: dict[str, RelationMeta]) -> "PaaSOAuthRequirer | None":
+        """Initialize the OAuth relation if its required.
+
+        Args:
+            requires: relation requires dictionary from metadata
+
+        Returns:
+            Returns the OAuth relation or None
+        """
+        _oauth = None
+        oauth_integrations = get_endpoints_by_interface_name(requires, "oauth")
+        if len(oauth_integrations) != 1:
+            return None
+        endpoint_name = oauth_integrations[0][0]
+        try:
+            _oauth = PaaSOAuthRequirer(
+                charm=self,
+                base_url=self._base_url,
+                relation_name=endpoint_name,
+                charm_config=self.config,
+            )
+            self.framework.observe(_oauth.on.oauth_info_changed, self._on_oauth_info_changed)
+        except NameError:
+            logger.exception(
+                "Missing charm library, please run `charmcraft fetch-lib charms.hydra_k8s.v0.oauth`"
+            )
+            return None
+        return _oauth
+
     def get_framework_config(self) -> BaseModel:
         """Return the framework related configurations.
 
@@ -452,11 +494,21 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
         if missing_integrations:
             self._create_app().stop_all_services()
             self._database_migration.set_status_to_pending()
-            message = f"missing integrations: {', '.join(missing_integrations)}"
-            logger.info(message)
+            logger.info(message := f"missing integrations: {', '.join(missing_integrations)}")
             self.update_app_and_unit_status(ops.BlockedStatus(message))
             return False
 
+        if self._oauth:
+            if self._oauth.is_client_created() and not self._ingress.is_ready():
+                logger.warning(msg := "Ingress relation is required for OIDC to work correctly!")
+                self.update_app_and_unit_status(ops.BlockedStatus(msg))
+                return False
+
+        oauth_integrations = get_endpoints_by_interface_name(self.framework.meta.requires, "oauth")
+        if len(oauth_integrations) > 1:
+            logger.error(msg := "Multiple OAuth relations are not supported at the moment")
+            self.update_app_and_unit_status(ops.BlockedStatus(msg))
+            return False
         return True
 
     def _missing_required_database_integrations(
@@ -548,6 +600,8 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             self._database_migration.set_status_to_pending()
 
         try:
+            if self._oauth:
+                self._oauth.update_client()
             self.update_app_and_unit_status(ops.MaintenanceStatus("Preparing service for restart"))
             self._create_app().restart()
         except CharmConfigInvalidError as exc:
@@ -555,6 +609,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             return
         self._ingress.provide_ingress_requirements(port=self._workload_config.port)
         self.unit.set_ports(ops.Port(protocol="tcp", port=self._workload_config.port))
+
         self.update_app_and_unit_status(ops.ActiveStatus())
 
     def _gen_environment(self) -> dict[str, str]:
@@ -598,6 +653,7 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
                 tracing=self._tracing,
                 smtp=self._smtp,
                 openfga=self._openfga,
+                oauth=self._oauth,
             ),
             base_url=self._base_url,
         )
@@ -732,4 +788,9 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
     @block_if_invalid_config
     def _on_openfga_store_created(self, _: ops.HookEvent) -> None:
         """Handle openfga store created event."""
+        self.restart()
+
+    @block_if_invalid_config
+    def _on_oauth_info_changed(self, _: ops.HookEvent) -> None:
+        """Handle the OAuth info changed event."""
         self.restart()

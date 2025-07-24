@@ -4,10 +4,13 @@
 
 import os
 import pathlib
+import shutil
 import typing
 
 import ops
 import pytest
+import yaml
+from ops import testing
 from ops.testing import Harness
 
 from examples.django.charm.src.charm import DjangoCharm
@@ -186,3 +189,75 @@ def _set_check_config_handler(
         check_config_command,
         handler=check_config_handler,
     )
+
+
+@pytest.fixture(scope="function", name="flask_base_state")
+def flask_base_state_fixture():
+    """State with container and config file set."""
+    os.chdir(PROJECT_ROOT / "examples/flask/charm")
+    yield {
+        "relations": [
+            testing.PeerRelation(
+                "secret-storage", local_app_data={"flask_secret_key": "test", "secret": "test"}
+            ),
+        ],
+        "containers": {
+            testing.Container(
+                name="flask-app",
+                can_connect=True,
+                mounts={"data": testing.Mount(location="/flask/gunicorn.conf.py", source="conf")},
+                execs={
+                    testing.Exec(
+                        command_prefix=["/bin/python3"],
+                        return_code=0,
+                    ),
+                },
+                _base_plan={
+                    "services": {
+                        "flask": {
+                            "startup": "enabled",
+                            "override": "replace",
+                            "command": "/bin/python3 -m gunicorn -c /flask/gunicorn.conf.py app:app -k [ sync ]",
+                        }
+                    }
+                },
+            )
+        },
+        "model": testing.Model(name="test-model"),
+    }
+
+
+@pytest.fixture(scope="function", name="multiple_oauth_integrations")
+def multiple_oauth_integrations_fixture(request):
+    os.chdir(PROJECT_ROOT / f"examples/{request.param.get('framework')}/charm")
+    shutil.copy("charmcraft.yaml", "org_charmcraft.yaml")
+    charmcraft_yaml = yaml.safe_load(open("charmcraft.yaml", "r").read())
+    charmcraft_yaml["requires"]["google"] = {"interface": "oauth", "optional": True, "limit": 1}
+    charmcraft_yaml["config"]["options"]["google_redirect_path"] = {
+        "default": "/callback",
+        "description": "The path that the user will be redirected upon completing login.",
+        "type": "string",
+    }
+    charmcraft_yaml["config"]["options"]["google_scopes"] = {
+        "default": "openid profile email",
+        "description": "A list of scopes with spaces in between.",
+        "type": "string",
+    }
+    yaml.safe_dump(charmcraft_yaml, open("charmcraft.yaml", "w"))
+
+    yield
+
+    shutil.copyfile("org_charmcraft.yaml", "charmcraft.yaml")
+    os.remove("org_charmcraft.yaml")
+
+
+OAUTH_RELATION_DATA_EXAMPLE = {
+    "authorization_endpoint": "https://traefik_ip/model_name-hydra/oauth2/auth",
+    "introspection_endpoint": "http://hydra.model_name.svc.cluster.local:4445/admin/oauth2/introspect",
+    "issuer_url": "https://traefik_ip/model_name-hydra",
+    "jwks_endpoint": "https://traefik_ip/model_name-hydra/.well-known/jwks.json",
+    "scope": "openid profile email",
+    "token_endpoint": "https://traefik_ip/model_name-hydra/oauth2/token",
+    "userinfo_endpoint": "https://traefik_ip/model_name-hydra/userinfo",
+    "client_id": "test-client-id",
+}
