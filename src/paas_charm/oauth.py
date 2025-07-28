@@ -116,8 +116,8 @@ class PaaSOAuthRequirer(OAuthRequirer):
         Returns:
             A ClientConfig instance with the configuration for the given endpoint.
         """
-        redirect_path = str(self._charm_config.get(f"{relation_name}_redirect_path", "/callback"))
-        scopes = str(self._charm_config.get(f"{relation_name}_scopes"))
+        redirect_path = str(self._charm_config.get(f"{relation_name}-redirect-path", "/callback"))
+        scopes = str(self._charm_config.get(f"{relation_name}-scopes"))
 
         return ClientConfig(
             redirect_uri=f"{self._base_url}/{redirect_path.strip('/')}",
@@ -138,3 +138,19 @@ class PaaSOAuthRequirer(OAuthRequirer):
             raise CharmConfigInvalidError(msg)
 
         self.update_client_config(config)
+
+    def is_related(self) -> bool:
+        """Check if the charm is related to an Oauth provider charm.
+
+        Returns:
+            True if the charm is related to an Oauth provider charm.
+        """
+        return bool(self.model.relations.get(self._relation_name))
+
+    def get_related_app_name(self) -> str:
+        """Return the related Oauth provider charm's name.
+
+        Returns:
+            Name of the Oauth provider charm.
+        """
+        return self.model.relations.get(self._relation_name)[0].app.name

@@ -9,6 +9,7 @@ import re
 
 import jubilant
 import pytest
+import requests
 from playwright.sync_api import expect, sync_playwright
 
 from tests.integration.types import App
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
     "app_fixture, endpoint",
     [
         ("flask_app", "login"),
+        ("django_app", "auth_login"),
     ],
 )
 def test_oauth_integrations(
@@ -28,6 +30,8 @@ def test_oauth_integrations(
     endpoint,
     request: pytest.FixtureRequest,
     identity_bundle,
+    browser_context_manager,
+    http: requests.Session,
 ):
     """
     arrange: set up the test Juju model and deploy the workload charm.
@@ -42,15 +46,20 @@ def test_oauth_integrations(
     app = request.getfixturevalue(app_fixture)
     status = juju.status()
 
-    if not status.apps.get(app.name).relations.get("oidc"):
-        juju.integrate(f"{app.name}", "hydra")
-
     if not status.apps.get(app.name).relations.get("ingress"):
         juju.integrate(f"{app.name}", "traefik-public")
 
     juju.wait(
         jubilant.all_active,
-        timeout=30 * 60,
+        timeout=10 * 60,
+    )
+
+    if not status.apps.get(app.name).relations.get("oidc"):
+        juju.integrate(f"{app.name}", "hydra")
+
+    juju.wait(
+        jubilant.all_active,
+        timeout=10 * 60,
     )
 
     if not _admin_identity_exists(juju, test_email):
@@ -78,6 +87,11 @@ def test_oauth_integrations(
     res = json.loads(
         juju.run("traefik-public/0", "show-proxied-endpoints").results["proxied-endpoints"]
     )
+
+    # make sure the app is alive
+    response = http.get(res[app.name]["url"], timeout=5, verify=False)
+    assert response.status_code == 200
+
     _assert_idp_login_success(res[app.name]["url"], endpoint, test_email, test_password)
 
 
@@ -91,7 +105,6 @@ def _admin_identity_exists(juju, test_email):
 
 
 def _assert_idp_login_success(app_url: str, endpoint: str, test_email: str, test_password: str):
-
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(ignore_https_errors=True)
