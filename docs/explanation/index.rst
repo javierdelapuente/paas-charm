@@ -14,8 +14,8 @@ configuration of web app frameworks.
    :maxdepth: 1
    :numbered:
 
-   12-Factor app principles <foundations>
-   How are they applied in rocks and charms? <foundations>
+   12-Factor app principles <12-factor-principles>
+   How are they applied in rocks and charms? <how-are-12-factor-principles-applied>
 
 12-Factor ecosystem
 -------------------
@@ -24,11 +24,11 @@ configuration of web app frameworks.
    :maxdepth: 1
    :numbered:
 
-   Importance of 12-Factor in the Canonical ecosystem <foundations>
-   How everything connects (source to production) <foundations>
-   Web app framework <foundations>
-   Rockcraft & rocks <foundations>
-   Charmcraft & charms <foundations>
+   Importance of 12-Factor in the Canonical ecosystem <12-factor-importance>
+   How everything connects (source to production) <full-lifecycle>
+   Web app framework <web-app-framework>
+   Rockcraft & rocks <rockcraft-rocks>
+   Charmcraft & charms <charmcraft-charms>
    Juju <foundations>
 
 
@@ -39,11 +39,11 @@ configuration of web app frameworks.
    :maxdepth: 1
    :numbered:
 
-   Rock architecture <foundations>
+   Rock architecture <rock-architecture>
 
 
 12-Factor charm
---------------
+---------------
 
 .. toctree::
    :maxdepth: 1
