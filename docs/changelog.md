@@ -12,6 +12,7 @@ Place any unreleased changes here, that are subject to release in coming version
 ## 1.8.2 - 2025-07-28
 
 * feat: Add OIDC support for Django.
+* * docs: Added "Supported customizable features and capabilities".
 
 ## 1.8.1 - 2025-07-25
 
