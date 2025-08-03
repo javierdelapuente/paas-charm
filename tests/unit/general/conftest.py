@@ -361,6 +361,72 @@ def fastapi_base_state_fixture():
     }
 
 
+@pytest.fixture(scope="function", name="go_base_state")
+def go_base_state_fixture():
+    """State with container and config file set."""
+    os.chdir(PROJECT_ROOT / "examples/go/charm")
+    yield {
+        "relations": [
+            testing.PeerRelation(
+                "secret-storage", local_app_data={"go_secret_key": "test", "secret": "test"}
+            ),
+            postgresql_relation("go-k8s"),
+        ],
+        "containers": {
+            testing.Container(
+                name="app",
+                can_connect=True,
+                execs={
+                    testing.Exec(
+                        command_prefix=["go-app"],
+                        return_code=0,
+                    ),
+                },
+                _base_plan={
+                    "services": {
+                        "go": {
+                            "startup": "enabled",
+                            "override": "replace",
+                            "command": "go-app",
+                        }
+                    }
+                },
+            )
+        },
+        "model": testing.Model(name="test-model"),
+    }
+
+
+@pytest.fixture(scope="function", name="expressjs_base_state")
+def expressjs_state_fixture():
+    """State with container and config file set."""
+    os.chdir(PROJECT_ROOT / "examples/expressjs/charm")
+    yield {
+        "relations": [
+            testing.PeerRelation(
+                "secret-storage", local_app_data={"expressjs_secret_key": "test"}
+            ),
+            postgresql_relation("expressjs-k8s"),
+        ],
+        "containers": {
+            testing.Container(
+                name="app",
+                can_connect=True,
+                _base_plan={
+                    "services": {
+                        "expressjs": {
+                            "startup": "enabled",
+                            "override": "replace",
+                            "command": "npm start",
+                        }
+                    }
+                },
+            )
+        },
+        "model": testing.Model(name="test-model"),
+    }
+
+
 OAUTH_RELATION_DATA_EXAMPLE = {
     "authorization_endpoint": "https://traefik_ip/model_name-hydra/oauth2/auth",
     "introspection_endpoint": "http://hydra.model_name.svc.cluster.local:4445/admin/oauth2/introspect",
