@@ -12,7 +12,7 @@ lifecycle management at any scale, on any infrastructure. The best way
 to take advantage of this strong ecosystem is to create a charm for
 your application.
 
-In your web application is written in one of the supported frameworks
+If your web application is written in one of the supported frameworks
 and follows the conventions for the 12-Factor app support in Charmcraft
 and Rockcraft based on the 12-Factor principles, you will be able to create
 a charm out of the box. In the spirit of Platform as a Service (PaaS)
@@ -23,10 +23,10 @@ This is how the 12-Factor principles are applied in the context of rocks and cha
  - I Codebase. A twelve-factor app should be always tracked in version control. There
    can be many deploys in many environments of one commit and there can be deploys
    that are related to different commits versions. A single repository can contain
-   the web app, the rockcraft.yaml and the charm code, but will not contain configuration
-   related to a deployment. A commit revision will be related to a charm revision also related
+   the web app, the ``rockcraft.yaml`` and the charm code, but will not contain configuration
+   related to a deployment. A commit revision will be related to a charm revision and also related
    to a specific rock OCI Image revision.
- - II Dependencies. Rocks, as OCI-images, are immutable images that contain all dependencies.
+ - II Dependencies. Rocks, as proper OCI-images, are immutable images that contain all dependencies.
    There is no explicit or implicit dependency on the rock on outside dependencies. The
    interface between the images, containers and the runtime is well established and standardized.
  - III Configuration is exposed as environment variables. The 12-Factor project is very
@@ -52,7 +52,7 @@ This is how the 12-Factor principles are applied in the context of rocks and cha
  - IX. Disposability. The twelve-factor app’s processes are disposable. This concept fits nicely in Kubernetes,
    that is the substrate used in Juju for the 12-Factor project. The application can be scaled and downscaled
    and the pods and containers can be restarted and recreated.
- - X. Development/production parity. Juju facilitates the devevelopment/production parity, as very similar environments
+ - X. Development/production parity. Juju facilitates the development/production parity, as very similar environments
    can be created using Juju tooling. It is also up to the good processes and practices to close the gap between
    development and production.
  - XI. Logs. Taking advantage of `Pebble log forwarding <https://documentation.ubuntu.com/pebble/reference/log-forwarding/>`_

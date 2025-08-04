@@ -14,9 +14,9 @@ is a fully compliant OCI-image that can be used outside of the Juju ecosystem.
 
 Your web app containerized in a ``rock`` will be managed by a charm, a software
 operator orchestrated by Juju. You can create the charm using the
-``init profile <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/commands/init/>`_,
+`init profile <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/commands/init/>`_,
 that will use the appropriate
-``chamrcraft extension <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/extensions/>`_.
+`Charmcraft extension <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/extensions/>`_.
 We recommend to place the charm code inside the ``charm`` directory in the same repository
 as your code.
 
@@ -34,11 +34,11 @@ specific CI/CD pipeline. Some recommendations and useful tools are:
    desired `channel <https://canonical-charmcraft.readthedocs-hosted.com/stable/howto/manage-channels/>`_. 
    This is not a mandatory step, as you can deploy charms locally without Charmhub.
  - For the deployment, the current recommendation is to use the
-   `Juju terraform provider <https://registry.terraform.io/providers/juju/juju/latest/docs>`_.
+   `Juju Terraform Provider <https://registry.terraform.io/providers/juju/juju/latest/docs>`_.
 
 Juju is the engine that will orchestrate the software operators. The web app will be able
 to integrate seamlessly with other charms, that can be running in Kubernetes or in Machines,
-and on-premises on in the cloud.
+and on-premises or in the cloud.
 
 For the operation of your applications, it is strongly recommended to use the 
 `Canonical Observability Stack <https://charmhub.io/cos-lite>`_, an

@@ -4,6 +4,7 @@ async
 CHANGELOG
 Changelog
 changelog
+charmcraft
 Charmcraft
 codebase
 Codebase
@@ -26,6 +27,7 @@ GitOps
 Integrations
 integrations
 ISD
+js
 md
 natively
 OCI
