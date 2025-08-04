@@ -1,7 +1,7 @@
 How 12-Factor app principles are applied in rocks and charms
 ============================================================
 
-The `12-factor App <https://12factor.net/>`_ is a methodolody to build
+The `12-factor App <https://12factor.net/>`_ is a methodology to build
 applications that are scalable, maintainable, and deployable. The twelve
 factors are a set of well established best practices that are specially
 relevant for web applications in cloud platforms.
@@ -38,11 +38,11 @@ This is how the 12-Factor principles are applied in the context of rocks and cha
    thanks to Juju relations.
  - V Build, release, run. The 12-Factor project together with rocks and charms provide a clear boundary
    between the build stage and the release stage. Infrastructure as Code and GitOps best practices can
-   be easily achived using the Juju terraform provider.
+   be easily achieved using the Juju Terraform Provider.
  - VI Processes. The processes that your rock runs should be stateless. It is the responsability of the
    application developer to only use the backing services for data that must be persistent and not use the
    file system to store persistent data. Using stateless applications, horizontal scalability can be achieved
-   incresing the number of units in a Juju application.
+   increasing the number of units in a Juju application.
  - VII. Port binding. The twelve-factor app is completely self-contained and should bind to a port.
    The 12-Factor project is specially designed for HTTP traffic, and integrations like ``ingress``
    will provide a ``routing layer`` to your application. SSL certificates can be added easily to your
@@ -52,8 +52,9 @@ This is how the 12-Factor principles are applied in the context of rocks and cha
  - IX. Disposability. The twelve-factor app’s processes are disposable. This concept fits nicely in Kubernetes,
    that is the substrate used in Juju for the 12-Factor project. The application can be scaled and downscaled
    and the pods and containers can be restarted and recreated.
- - X. Dev/prod parity. Juju facilitates the dev/prod parity, as very similar environments can be created using
-   Juju tooling. It is also up to the good processes and practices to close the gap between dev and prod.
+ - X. Development/production parity. Juju facilitates the devevelopment/production parity, as very similar environments
+   can be created using Juju tooling. It is also up to the good processes and practices to close the gap between
+   development and production.
  - XI. Logs. Taking advantage of `Pebble log forwarding <https://documentation.ubuntu.com/pebble/reference/log-forwarding/>`_
    and the `Canonical Observability Stack <https://documentation.ubuntu.com/observability/>`_, the 12-Factor project in
    Charmcraft and Rockcraft provides the best tools and practices in observability. Following the 12-Factor principle,

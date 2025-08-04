@@ -2,7 +2,7 @@ Web app framework
 =================
 
 The 12-Factor app support in Charmcraft and Rockcraft is opinionated by design.
-That way, if your application is writen with one of the supported frameworks
+That way, if your application is written with one of the supported frameworks
 and follows the conventions, the 12-Factor project will be able to create
 automatically a software operator for it.
 

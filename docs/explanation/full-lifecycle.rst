@@ -3,7 +3,7 @@ How everything connects (source to production)
 
 The 12-Factor app support in Charmcraft and Rockcraft is an opinionated
 framework based on the 12-Factor methodology. If you web app uses one of the
-supported frameworkd and follows the conventions of the tool, you can
+supported framework and follows the conventions of the tool, you can
 easily charm it.
 
 We recommend to put the Rockcraft project file (``rockcraft.yaml``) in the same
@@ -22,17 +22,15 @@ as your code.
 
 The 12-Factor app support in Charmcraft and Rockcraft does not enforce any
 specific CI/CD pipeline. Some recommendations and useful tools are:
- - For the build stage, the ``rockcraft`` and ``charmcraft``tools are used to create the rock and
-   charm artifacts.
- - For integration tests involving charms the ``Jubilant <https://github.com/canonical/jubilant>``_
-   is an easy to use library.
- - `concierge <https://github.com/canonical/concierge>`_ is an opinionated utility to provision testing
-   machines.
+
+ - For the build stage, the ``rockcraft`` and ``charmcraft`` tools are used to create the rock and charm artifacts.
+ - For integration tests involving charms the `Jubilant <https://github.com/canonical/jubilant>`_ is an easy to use library.
+ - `concierge <https://github.com/canonical/concierge>`_ is an opinionated utility to provision testing machines.
  - `charmcraft test <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/commands/test/>`_, based
    on `spread <https://github.com/canonical/spread>`_ is a convenient full-system test (task) distribution.
  - Once your artifacts are ready, they can be
    `uploaded to Charmhub <https://canonical-charmcraft.readthedocs-hosted.com/3.4.5/reference/commands/upload/>`_ and
-   `promoted <https://canonical-charmcraft.readthedocs-hosted.com/3.4.5/reference/commands/release/`_ to the
+   `promoted <https://canonical-charmcraft.readthedocs-hosted.com/3.4.5/reference/commands/release/>`_ to the
    desired `channel <https://canonical-charmcraft.readthedocs-hosted.com/stable/howto/manage-channels/>`_. 
    This is not a mandatory step, as you can deploy charms locally without Charmhub.
  - For the deployment, the current recommendation is to use the
