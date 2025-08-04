@@ -37,5 +37,4 @@ advantage of the full Juju ecosystem.
    How everything connects (source to production) <full-lifecycle>
    Web app framework <web-app-framework>
    Juju, charms and rocks <foundations>
-   Rock architecture <rock-architecture>
    Charm architecture <charm-architecture>
