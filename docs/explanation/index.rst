@@ -10,43 +10,30 @@ configuration of web app frameworks.
 12-Factor app principles
 ------------------------
 
+The native 12-factor framework support in Rockcraft and Charmcraft provides an
+opinionated way to easily integrate your web application into the Juju ecosystem.
+The Juju ecosystem provides multitude of curated software operators for your
+observability stack, database, SSO, and many more and allows their deployment and
+lifecycle management on metal, on VMs, on K8s and on cloud providers.
+
+That way, the 12-factor framework support in Rockcraft and Charmcraft offers
+a fully fledged Platform as a Service that streamlines managing the
+infrastructure, whether on premises or on cloud, at any scale, and allows developers
+to focus on their core competences instead of a complex software stack.
+
+The glue point of the 12-factor framework support in Rockcraft and Charmcraft is
+the 12-Factor methodology. The 12-Factor methodology is a set of best practices for
+building modern, scalable, and maintainable web applications. By following these
+principles, you can easily create a rock (OCI image) and a charm (software operator) for
+your web app that can take advantage of the full Juju ecosystem.
+
 .. toctree::
    :maxdepth: 1
    :numbered:
 
-   12-Factor app principles <12-factor-principles>
-   How are they applied in rocks and charms? <how-are-12-factor-principles-applied>
-
-12-Factor ecosystem
--------------------
-
-.. toctree::
-   :maxdepth: 1
-   :numbered:
-
-   Importance of 12-Factor in the Canonical ecosystem <12-factor-importance>
+   How the 12-Factor principles are applied in rocks and charms <how-are-12-factor-principles-applied>
    How everything connects (source to production) <full-lifecycle>
    Web app framework <web-app-framework>
-   Rockcraft & rocks <rockcraft-rocks>
-   Charmcraft & charms <charmcraft-charms>
-   Juju <foundations>
-
-
-12-Factor rock
---------------
-
-.. toctree::
-   :maxdepth: 1
-   :numbered:
-
+   Juju, charms and rocks <foundations>
    Rock architecture <rock-architecture>
-
-
-12-Factor charm
----------------
-
-.. toctree::
-   :maxdepth: 1
-   :numbered:
-
    Charm architecture <charm-architecture>

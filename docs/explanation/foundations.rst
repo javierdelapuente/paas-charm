@@ -15,7 +15,8 @@ following Canonical products:
   charms.
 - `Rockcraft <https://documentation.ubuntu.com/rockcraft/en/latest/>`_ is a
   tool to create rocks – a new generation of secure, stable and OCI-compliant
-  container images, based on Ubuntu.
+  container images, based on Ubuntu. TODO Pebble? TODO copy advantages from
+  Rockcraft, Security? LTS? Slices? Declarative?
 
 A Rockcraft framework is initially used to facilitate the creation of a well
 structured, minimal and hardened container image, called a rock. A Charmcraft
