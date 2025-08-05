@@ -4,7 +4,6 @@ async
 CHANGELOG
 Changelog
 changelog
-charmcraft
 Charmcraft
 codebase
 Codebase
