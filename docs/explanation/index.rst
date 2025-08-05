@@ -29,6 +29,13 @@ applications. By following these principles, you can easily create a rock
 (OCI image) and a charm (software operator) for your web app that can take
 advantage of the full Juju ecosystem.
 
+12-Factor principles and its support in Charmcraft and Rockcraft
+----------------------------------------------------------------
+
+The 12-Factor app support in Charmcraft and Rockcraft is based on the principles
+stated in the 12-Factor methodology. You can know more about the components
+involucrated and how the principles are applied in the following links.
+
 .. toctree::
    :maxdepth: 1
    :numbered:
