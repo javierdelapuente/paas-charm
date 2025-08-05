@@ -6,7 +6,7 @@ applications that are scalable, maintainable, and deployable. The twelve
 factors are a set of well established best practices that are specially
 relevant for web applications in cloud platforms.
 
-Juju provides a strong ecosystem that is composed of multitude of high
+Juju provides a strong ecosystem composed of a multitude of high
 quality software operators that enables the deployment, integration and
 lifecycle management at any scale, on any infrastructure. The best way
 to take advantage of this strong ecosystem is to create a charm for

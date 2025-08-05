@@ -33,8 +33,8 @@ advantage of the full Juju ecosystem.
    :maxdepth: 1
    :numbered:
 
+   Juju, charms and rocks <foundations>
    How the 12-Factor principles are applied in rocks and charms <how-are-12-factor-principles-applied>
    How everything connects (source to production) <full-lifecycle>
    Web app framework <web-app-framework>
-   Juju, charms and rocks <foundations>
    Charm architecture <charm-architecture>
