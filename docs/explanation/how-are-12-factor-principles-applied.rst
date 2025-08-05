@@ -39,7 +39,7 @@ This is how the 12-Factor principles are applied in the context of rocks and cha
  - **V Build, release, run.** The 12-Factor project together with rocks and charms provide a clear boundary
    between the build stage and the release stage. Infrastructure as Code and GitOps best practices can
    be easily achieved using the Juju Terraform Provider.
- - **VI Processes.** The processes that your rock runs should be stateless. It is the responsability of the
+ - **VI Processes.** The processes that your rock runs should be stateless. It is the responsibility of the
    application developer to only use the backing services for data that must be persistent and not use the
    file system to store persistent data. Using stateless applications, horizontal scalability can be achieved
    increasing the number of units in a Juju application.

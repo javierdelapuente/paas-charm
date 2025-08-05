@@ -41,7 +41,6 @@ pypi
 rabbitmq
 RabbitMQ
 redis
-responsability
 Rockcraft
 Terraform
 saml
@@ -54,4 +53,3 @@ SSL
 SSO
 tox
 VMs
-
