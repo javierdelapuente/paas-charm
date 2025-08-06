@@ -23,18 +23,18 @@ as your code.
 The 12-Factor app support in Charmcraft and Rockcraft does not enforce any
 specific CI/CD pipeline. Some recommendations and useful tools are:
 
- - For the build stage, the ``rockcraft`` and ``charmcraft`` tools are used to create the rock and charm artifacts.
- - For integration tests involving charms, use the `Jubilant <https://github.com/canonical/jubilant>`_ library.
- - `concierge <https://github.com/canonical/concierge>`_ is an opinionated utility to provision testing machines.
- - Charmcraft's `test command <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/commands/test/>`_, based
-   on `Spread <https://github.com/canonical/spread>`_ is a convenient full-system test (task) distribution.
- - Once your artifacts are ready, they can be
-   `uploaded to Charmhub <https://canonical-charmcraft.readthedocs-hosted.com/3.4.5/reference/commands/upload/>`_ and
-   `promoted <https://canonical-charmcraft.readthedocs-hosted.com/3.4.5/reference/commands/release/>`_ to the
-   desired `channel <https://canonical-charmcraft.readthedocs-hosted.com/stable/howto/manage-channels/>`_. 
-   This is not a mandatory step, as you can deploy charms locally without Charmhub.
- - For the deployment, the current recommendation is to use the
-   `Juju Terraform Provider <https://registry.terraform.io/providers/juju/juju/latest/docs>`_.
+- For the build stage, the ``rockcraft`` and ``charmcraft`` tools are used to create the rock and charm artifacts.
+- For integration tests involving charms, use the `Jubilant <https://github.com/canonical/jubilant>`_ library.
+- `concierge <https://github.com/canonical/concierge>`_ is an opinionated utility to provision testing machines.
+- Charmcraft's `test command <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/commands/test/>`_, based
+  on `Spread <https://github.com/canonical/spread>`_ is a convenient full-system test (task) distribution.
+- Once your artifacts are ready, they can be
+  `uploaded to Charmhub <https://canonical-charmcraft.readthedocs-hosted.com/3.4.5/reference/commands/upload/>`_ and
+  `promoted <https://canonical-charmcraft.readthedocs-hosted.com/3.4.5/reference/commands/release/>`_ to the
+  desired `channel <https://canonical-charmcraft.readthedocs-hosted.com/stable/howto/manage-channels/>`_. 
+  This is not a mandatory step, as you can deploy charms locally without Charmhub.
+- For the deployment, the current recommendation is to use the
+  `Juju Terraform Provider <https://registry.terraform.io/providers/juju/juju/latest/docs>`_.
 
 Juju is the engine that will orchestrate the software operators. The web app will be able
 to integrate seamlessly with other charms, that can be running in Kubernetes or in Machines,

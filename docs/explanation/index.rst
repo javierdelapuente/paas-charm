@@ -12,7 +12,7 @@ configuration of web app frameworks.
 
 The native 12-factor framework support in Rockcraft and Charmcraft provides an
 opinionated way to easily integrate your web application into the Juju ecosystem.
-The Juju ecosystem provides multitude of `curated software operators <https://charmhub.io/>`_
+The Juju ecosystem provides a multitude of `curated software operators <https://charmhub.io/>`_
 for your observability stack, database, SSO, and many more and allows their deployment and
 lifecycle management on metal, on VMs, on K8s and on cloud providers
 (see `substrates <https://documentation.ubuntu.com/juju/3.6/reference/cloud/>`_).
@@ -33,7 +33,7 @@ advantage of the full Juju ecosystem.
 ----------------------------------------------------------------
 
 The 12-Factor app support in Charmcraft and Rockcraft is based on the principles
-stated in the 12-Factor methodology. You can know more about the components
+stated in the 12-Factor methodology. Learn more about the components
 involved and how the principles are applied in the following links.
 
 .. toctree::
