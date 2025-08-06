@@ -14,4 +14,4 @@ The following frameworks are supported:
 - `FastAPI <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/extensions/fastapi-framework-extension/>`_
 - `Go <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/extensions/go-framework-extension/>`_
 - `Express.js <https://canonical-charmcraft.readthedocs-hosted.com/latest/reference/extensions/express-framework-extension/>`_
-- Spring Boot (pending)
+- `Spring Boot <https://documentation.ubuntu.com/charmcraft/latest/reference/extensions/spring-boot-framework-extension/>`_
