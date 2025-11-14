@@ -2,14 +2,24 @@
 # See LICENSE file for licensing details.
 
 """Provide the Observability class to represent the observability stack for charms."""
+import logging
+import os
 import os.path
 import pathlib
+import tempfile
+from typing import TYPE_CHECKING
 
 import ops
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 
+from paas_charm.paas_config import convert_to_prometheus_jobs, read_paas_charm_config
 from paas_charm.utils import enable_pebble_log_forwarding
+
+if TYPE_CHECKING:
+    from paas_charm.app import WorkloadConfig
+
+logger = logging.getLogger(__name__)
 
 
 class Observability(ops.Object):
@@ -24,6 +34,8 @@ class Observability(ops.Object):
         log_files: list[pathlib.Path],
         metrics_target: str | None,
         metrics_path: str | None,
+        workload_config: "WorkloadConfig | None" = None,
+        container: "ops.Container | None" = None,
     ):
         """Initialize a new instance of the Observability class.
 
@@ -35,14 +47,14 @@ class Observability(ops.Object):
             log_files: List of files to monitor.
             metrics_target: Target to scrape for metrics.
             metrics_path: Path to scrape for metrics.
+            workload_config: Optional workload configuration for reading paas-charm.yaml.
+            container: Optional container for checking paas-charm.yaml file existence.
         """
         super().__init__(charm, "observability")
         self._charm = charm
-        jobs = None
-        if metrics_path and metrics_target:
-            jobs = [
-                {"metrics_path": metrics_path, "static_configs": [{"targets": [metrics_target]}]}
-            ]
+        jobs = self._build_prometheus_jobs(
+            metrics_target, metrics_path, workload_config, container
+        )
         self._metrics_endpoint = MetricsEndpointProvider(
             charm,
             alert_rules_path=os.path.join(cos_dir, "prometheus_alert_rules"),
@@ -90,3 +102,98 @@ class Observability(ops.Object):
             dashboards_path=os.path.join(cos_dir, "grafana_dashboards"),
             relation_name="grafana-dashboard",
         )
+
+    def _build_prometheus_jobs(
+        self,
+        metrics_target: str | None,
+        metrics_path: str | None,
+        workload_config: "WorkloadConfig | None",
+        container: "ops.Container | None",
+    ) -> list[dict] | None:
+        """Build Prometheus jobs from paas-charm.yaml and legacy config options.
+
+        Args:
+            metrics_target: Legacy target to scrape for metrics.
+            metrics_path: Legacy path to scrape for metrics.
+            workload_config: Workload configuration containing app_dir and unit info.
+            container: Container to check for paas-charm.yaml file existence.
+
+        Returns:
+            List of Prometheus job configurations, or None if no jobs configured.
+        """
+        jobs = []
+
+        # Try to read paas-charm.yaml if workload_config and container are provided
+        custom_jobs = self._read_custom_metrics_config(workload_config, container)
+        if custom_jobs:
+            jobs.extend(custom_jobs)
+
+        # Add legacy metrics_target/metrics_path if provided
+        if metrics_path and metrics_target:
+            legacy_job = {
+                "metrics_path": metrics_path,
+                "static_configs": [{"targets": [metrics_target]}],
+            }
+            jobs.append(legacy_job)
+            logger.debug("Added legacy metrics job: %s", legacy_job)
+
+        return jobs if jobs else None
+
+    def _read_custom_metrics_config(
+        self, workload_config: "WorkloadConfig | None", container: "ops.Container | None"
+    ) -> list[dict]:
+        """Read and parse paas-charm.yaml from container.
+
+        Args:
+            workload_config: Workload configuration containing app_dir and unit info.
+            container: Container to check for paas-charm.yaml file existence.
+
+        Returns:
+            List of custom Prometheus job configurations.
+        """
+        if workload_config is None or container is None:
+            return []
+
+        if not container.can_connect():
+            return []
+
+        paas_config_path = workload_config.app_dir / "paas-charm.yaml"
+        if not container.exists(paas_config_path):
+            return []
+
+        try:
+            config_content = container.pull(paas_config_path).read()
+            return self._parse_paas_config(
+                config_content, workload_config.unit_name, workload_config.should_run_scheduler()
+            )
+        except (OSError, ValueError) as exc:
+            logger.warning("Failed to read paas-charm.yaml from %s: %s", paas_config_path, exc)
+            return []
+
+    def _parse_paas_config(
+        self, config_content: str, unit_name: str, should_run_scheduler: bool
+    ) -> list[dict]:
+        """Parse paas-charm.yaml content and convert to Prometheus jobs.
+
+        Args:
+            config_content: YAML content as string.
+            unit_name: Name of the current unit.
+            should_run_scheduler: Whether this unit should run scheduler processes.
+
+        Returns:
+            List of Prometheus job configurations.
+        """
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as tmp_file:
+            tmp_file.write(config_content)
+            tmp_path = pathlib.Path(tmp_file.name)
+
+        try:
+            paas_config = read_paas_charm_config(tmp_path)
+            if paas_config is None:
+                return []
+
+            custom_jobs = convert_to_prometheus_jobs(paas_config, unit_name, should_run_scheduler)
+            logger.info("Loaded %d custom Prometheus jobs from paas-charm.yaml", len(custom_jobs))
+            return custom_jobs
+        finally:
+            os.unlink(tmp_path)

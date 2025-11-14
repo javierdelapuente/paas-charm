@@ -166,6 +166,8 @@ class PaasCharm(abc.ABC, ops.CharmBase):  # pylint: disable=too-many-instance-at
             cos_dir=self.get_cos_dir(),
             metrics_target=self._workload_config.metrics_target,
             metrics_path=self._workload_config.metrics_path,
+            workload_config=self._workload_config,
+            container=self.unit.get_container(self._workload_config.container_name),
         )
 
         self.framework.observe(self.on.config_changed, self._on_config_changed)
