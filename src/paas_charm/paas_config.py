@@ -188,13 +188,14 @@ def convert_to_prometheus_jobs(
                     processed_targets.append(processed_target)
 
             if processed_targets:
-                job = {
-                    "metrics_path": scrape_config.metrics_path,
-                    "static_configs": [{"targets": processed_targets}],
-                }
-                # Add labels if present
+                static_config_dict: dict[str, Any] = {"targets": processed_targets}
                 if static_config.labels:
-                    job["static_configs"][0]["labels"] = static_config.labels
+                    static_config_dict["labels"] = static_config.labels
+                
+                job: dict[str, Any] = {
+                    "metrics_path": scrape_config.metrics_path,
+                    "static_configs": [static_config_dict],
+                }
                 # Add job_name if it's non-default
                 if scrape_config.job_name:
                     job["job_name"] = scrape_config.job_name
