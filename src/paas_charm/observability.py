@@ -3,8 +3,10 @@
 
 """Provide the Observability class to represent the observability stack for charms."""
 import logging
+import os
 import os.path
 import pathlib
+import tempfile
 from typing import TYPE_CHECKING
 
 import ops
@@ -122,46 +124,9 @@ class Observability(ops.Object):
         jobs = []
 
         # Try to read paas-charm.yaml if workload_config and container are provided
-        if workload_config is not None and container is not None:
-            paas_config_path = workload_config.app_dir / "paas-charm.yaml"
-
-            # Only try to read if the container can access the file
-            if container.can_connect():
-                try:
-                    if container.exists(paas_config_path):
-                        # Read the file from container
-                        config_content = container.pull(paas_config_path).read()
-                        # Write to a temporary location for parsing
-                        import tempfile
-
-                        with tempfile.NamedTemporaryFile(
-                            mode="w", suffix=".yaml", delete=False
-                        ) as tmp_file:
-                            tmp_file.write(config_content)
-                            tmp_path = pathlib.Path(tmp_file.name)
-
-                        try:
-                            paas_config = read_paas_charm_config(tmp_path)
-                            if paas_config is not None:
-                                custom_jobs = convert_to_prometheus_jobs(
-                                    paas_config,
-                                    workload_config.unit_name,
-                                    workload_config.should_run_scheduler(),
-                                )
-                                jobs.extend(custom_jobs)
-                                logger.info(
-                                    "Loaded %d custom Prometheus jobs from paas-charm.yaml",
-                                    len(custom_jobs),
-                                )
-                        finally:
-                            # Clean up temporary file
-                            import os
-
-                            os.unlink(tmp_path)
-                except Exception as exc:
-                    logger.warning(
-                        "Failed to read paas-charm.yaml from %s: %s", paas_config_path, exc
-                    )
+        custom_jobs = self._read_custom_metrics_config(workload_config, container)
+        if custom_jobs:
+            jobs.extend(custom_jobs)
 
         # Add legacy metrics_target/metrics_path if provided
         if metrics_path and metrics_target:
@@ -173,3 +138,62 @@ class Observability(ops.Object):
             logger.debug("Added legacy metrics job: %s", legacy_job)
 
         return jobs if jobs else None
+
+    def _read_custom_metrics_config(
+        self, workload_config: "WorkloadConfig | None", container: "ops.Container | None"
+    ) -> list[dict]:
+        """Read and parse paas-charm.yaml from container.
+
+        Args:
+            workload_config: Workload configuration containing app_dir and unit info.
+            container: Container to check for paas-charm.yaml file existence.
+
+        Returns:
+            List of custom Prometheus job configurations.
+        """
+        if workload_config is None or container is None:
+            return []
+
+        if not container.can_connect():
+            return []
+
+        paas_config_path = workload_config.app_dir / "paas-charm.yaml"
+        if not container.exists(paas_config_path):
+            return []
+
+        try:
+            config_content = container.pull(paas_config_path).read()
+            return self._parse_paas_config(
+                config_content, workload_config.unit_name, workload_config.should_run_scheduler()
+            )
+        except (OSError, ValueError) as exc:
+            logger.warning("Failed to read paas-charm.yaml from %s: %s", paas_config_path, exc)
+            return []
+
+    def _parse_paas_config(
+        self, config_content: str, unit_name: str, should_run_scheduler: bool
+    ) -> list[dict]:
+        """Parse paas-charm.yaml content and convert to Prometheus jobs.
+
+        Args:
+            config_content: YAML content as string.
+            unit_name: Name of the current unit.
+            should_run_scheduler: Whether this unit should run scheduler processes.
+
+        Returns:
+            List of Prometheus job configurations.
+        """
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as tmp_file:
+            tmp_file.write(config_content)
+            tmp_path = pathlib.Path(tmp_file.name)
+
+        try:
+            paas_config = read_paas_charm_config(tmp_path)
+            if paas_config is None:
+                return []
+
+            custom_jobs = convert_to_prometheus_jobs(paas_config, unit_name, should_run_scheduler)
+            logger.info("Loaded %d custom Prometheus jobs from paas-charm.yaml", len(custom_jobs))
+            return custom_jobs
+        finally:
+            os.unlink(tmp_path)

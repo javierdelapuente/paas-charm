@@ -133,19 +133,19 @@ def read_paas_charm_config(config_path: pathlib.Path) -> PaasCharmConfig | None:
     except yaml.YAMLError as exc:
         logger.error("Failed to parse paas-charm.yaml at %s: %s", config_path, exc)
         return None
-    except Exception as exc:
+    except (OSError, ValueError) as exc:
         logger.error("Failed to read paas-charm.yaml at %s: %s", config_path, exc)
         return None
 
 
 def process_scheduler_placeholder(
-    target: str, unit_name: str, should_run_scheduler: bool
+    target: str, unit_name: str, should_run_scheduler: bool  # pylint: disable=unused-argument
 ) -> str | None:
     """Process @scheduler placeholder in target string.
 
     Args:
         target: Target string that may contain @scheduler placeholder.
-        unit_name: Name of the current unit.
+        unit_name: Name of the current unit (reserved for future use).
         should_run_scheduler: Whether this unit should run scheduler processes.
 
     Returns:
@@ -156,9 +156,8 @@ def process_scheduler_placeholder(
         if should_run_scheduler:
             # Replace @scheduler with localhost since scheduler runs on this unit
             return target.replace("@scheduler", "localhost")
-        else:
-            # This unit should not expose scheduler metrics
-            return None
+        # This unit should not expose scheduler metrics
+        return None
     return target
 
 
@@ -191,7 +190,7 @@ def convert_to_prometheus_jobs(
                 static_config_dict: dict[str, Any] = {"targets": processed_targets}
                 if static_config.labels:
                     static_config_dict["labels"] = static_config.labels
-                
+
                 job: dict[str, Any] = {
                     "metrics_path": scrape_config.metrics_path,
                     "static_configs": [static_config_dict],
