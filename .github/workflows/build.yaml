@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     uses: javierdelapuente/operator-ci-poc/.github/workflows/build-artifacts.yml@main
+    with:
+      opcli-ref: main
     permissions:
       contents: read
       packages: write
