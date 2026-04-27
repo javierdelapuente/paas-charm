@@ -1,0 +1,14 @@
+name: Build artifacts
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: javierdelapuente/operator-ci-poc/.github/workflows/build-artifacts.yml@main
+    permissions:
+      contents: read
+      packages: write
