@@ -1,0 +1,57 @@
+project: paas-charm
+path: /home/ubuntu/proj
+kill-timeout: 120m
+backends:
+  integration-test:
+    systems:
+    - ubuntu-24.04
+environment:
+  SUDO_USER: ''
+  SUDO_UID: ''
+  LANG: C.UTF-8
+  LANGUAGE: en
+  CONCIERGE: '$(HOST: echo "${CONCIERGE:-concierge.yaml}")'
+exclude:
+- .git
+- .tox
+- .venv
+- .*_cache
+suites:
+  tests/integration/:
+    summary: integration tests
+    backends:
+    - integration-test
+    environment:
+      MODULE/test_django: test_django
+      MODULE/test_django_integrations: test_django_integrations
+      MODULE/test_workers_django: "test_workers and django"
+      MODULE/test_expressjs: test_expressjs
+      MODULE/test_fastapi: test_fastapi
+      MODULE/test_charm_flask: "test_charm and flask"
+      MODULE/test_database: test_database
+      MODULE/test_db_migration: test_db_migration
+      MODULE/test_flask_configs: test_flask_configs
+      MODULE/test_proxy: test_proxy
+      MODULE/test_workers_flask: "test_workers and flask"
+      MODULE/test_config: test_config
+      MODULE/test_non_root_db_migration: test_non_root_db_migration
+      MODULE/test_non_root_loki: test_non_root_loki
+      MODULE/test_go: test_go
+      MODULE/test_grafana: test_grafana
+      MODULE/test_http_proxy: test_http_proxy
+      MODULE/test_loki: test_loki
+      MODULE/test_minimal: test_minimal
+      MODULE/test_mongodb: test_mongodb
+      MODULE/test_mysql: test_mysql
+      MODULE/test_oauth: test_oauth
+      MODULE/test_openfga: test_openfga
+      MODULE/test_prometheus: test_prometheus
+      MODULE/test_rabbitmq: test_rabbitmq
+      MODULE/test_redis: test_redis
+      MODULE/test_s3: test_s3
+      MODULE/test_saml: test_saml
+      MODULE/test_smtp: test_smtp
+      MODULE/test_tracing: test_tracing
+      MODULE/test_charm_springboot: "test_charm and springboot"
+      MODULE/test_spring_saml: test_spring_saml
+      TOX_ENV: ''

@@ -169,3 +169,8 @@ examples/**/lib
 # Flask minimal libs
 examples/flask-minimal/charm/lib
 
+
+# opcli / spread generated files
+artifacts-generated.yaml
+.opcli-spread-*/
+.spread-reuse.*.yaml
