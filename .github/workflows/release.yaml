@@ -3,6 +3,13 @@ name: Release Python Package
 on:
   workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - "artifacts.yaml"
+      - "concierge.yaml"
+      - "spread.yaml"
+      - "tests/integration/run/task.yaml"
+      - ".github/workflows/build.yaml"
+      - ".github/instructions/**"
 
 jobs:
   build:

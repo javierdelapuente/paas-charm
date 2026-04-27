@@ -2,8 +2,12 @@ name: Provide approval for bot PRs
 
 on:
   pull_request:
-
-jobs:
-  bot_pr_approval:
+    paths-ignore:
+      - "artifacts.yaml"
+      - "concierge.yaml"
+      - "spread.yaml"
+      - "tests/integration/run/task.yaml"
+      - ".github/workflows/build.yaml"
+      - ".github/instructions/**"
     uses: canonical/operator-workflows/.github/workflows/bot_pr_approval.yaml@main
     secrets: inherit
