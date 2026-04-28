@@ -1,6 +1,7 @@
 name: Integration test
 
 on:
+  pull_request:
   schedule:
     - cron: "0 15 * * SAT"
   workflow_dispatch:
