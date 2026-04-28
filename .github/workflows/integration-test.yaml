@@ -1,0 +1,14 @@
+name: Integration test
+
+on:
+  schedule:
+    - cron: "0 15 * * SAT"
+  workflow_dispatch:
+
+jobs:
+  integration-test:
+    uses: javierdelapuente/operator-ci-poc/.github/workflows/integration-test.yml@main
+    permissions:
+      contents: read
+      packages: write
+      actions: read
