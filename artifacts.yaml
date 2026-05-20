@@ -1,0 +1,93 @@
+version: 1
+rocks:
+- name: django-app
+  rockcraft-yaml: examples/django/django_app/rockcraft.yaml
+  builds:
+  - arch: amd64
+- name: django-async-app
+  rockcraft-yaml: examples/django/django_async_app/rockcraft.yaml
+  builds:
+  - arch: amd64
+- name: expressjs-app
+  rockcraft-yaml: examples/expressjs/rockcraft.yaml
+  builds:
+  - arch: amd64
+- name: fastapi-app
+  rockcraft-yaml: examples/fastapi/fastapi_app/rockcraft.yaml
+  builds:
+  - arch: amd64
+- name: test-async-flask
+  rockcraft-yaml: examples/flask/test_async_rock/rockcraft.yaml
+  builds:
+  - arch: amd64
+- name: test-db-flask
+  rockcraft-yaml: examples/flask/test_db_rock/rockcraft.yaml
+  builds:
+  - arch: amd64
+- name: test-flask
+  rockcraft-yaml: examples/flask/test_rock/rockcraft.yaml
+  builds:
+  - arch: amd64
+- name: flask-minimal-app
+  rockcraft-yaml: examples/flask-minimal/flask_minimal_app/rockcraft.yaml
+  builds:
+  - arch: amd64
+- name: go-app
+  rockcraft-yaml: examples/go/go_app/rockcraft.yaml
+  builds:
+  - arch: amd64
+- name: paas-spring-boot-app
+  rockcraft-yaml: examples/springboot/spring-boot_app/rockcraft.yaml
+  builds:
+  - arch: amd64
+charms:
+- name: django-k8s
+  charmcraft-yaml: examples/django/charm/charmcraft.yaml
+  resources:
+    django-app-image:
+      type: oci-image
+  builds:
+  - arch: amd64
+- name: expressjs-k8s
+  charmcraft-yaml: examples/expressjs/charm/charmcraft.yaml
+  resources:
+    app-image:
+      type: oci-image
+  builds:
+  - arch: amd64
+- name: fastapi-k8s
+  charmcraft-yaml: examples/fastapi/charm/charmcraft.yaml
+  resources:
+    app-image:
+      type: oci-image
+  builds:
+  - arch: amd64
+- name: flask-k8s
+  charmcraft-yaml: examples/flask/charm/charmcraft.yaml
+  resources:
+    flask-app-image:
+      type: oci-image
+  builds:
+  - arch: amd64
+- name: flask-minimal-k8s
+  charmcraft-yaml: examples/flask-minimal/charm/charmcraft.yaml
+  resources:
+    flask-app-image:
+      type: oci-image
+  builds:
+  - arch: amd64
+- name: go-k8s
+  charmcraft-yaml: examples/go/charm/charmcraft.yaml
+  resources:
+    app-image:
+      type: oci-image
+  builds:
+  - arch: amd64
+- name: spring-boot-k8s
+  charmcraft-yaml: examples/springboot/charm/charmcraft.yaml
+  resources:
+    app-image:
+      type: oci-image
+  builds:
+  - arch: amd64
+snaps: []
