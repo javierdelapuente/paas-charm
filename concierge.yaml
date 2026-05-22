@@ -1,0 +1,20 @@
+juju:
+  channel: 3.6/stable
+
+providers:
+  microk8s:
+    enable: true
+    bootstrap: true
+    addons:
+      - dns
+      - ingress
+      - rbac
+      - hostpath-storage
+      - metallb:10.64.140.43-10.64.140.49
+
+host:
+  snaps:
+    rockcraft:
+      channel: latest/edge
+    charmcraft:
+      channel: latest/edge

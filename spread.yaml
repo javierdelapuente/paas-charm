@@ -1,0 +1,55 @@
+project: paas-charm
+path: /home/ubuntu/proj
+kill-timeout: 60m
+backends:
+  integration-test:
+    type: integration-test
+    systems:
+    - ubuntu-24.04:
+        cpu: 4
+        memory: 16
+        disk: 40
+environment:
+  CONCIERGE: '$(HOST: echo "${CONCIERGE:-concierge.yaml}")'
+  OPCLI_GIT_REF: '$(HOST: echo "${OPCLI_GIT_REF:-main}")'
+exclude:
+- .git
+- .tox
+- .venv
+- .*_cache
+suites:
+  tests/integration/:
+    summary: integration tests
+    backends:
+    - integration-test
+    environment:
+      MODULE/test_charm: test_charm.py
+      MODULE/test_flask_configs: test_flask_configs.py
+      MODULE/test_config: test_config.py
+      MODULE/test_database: test_database.py
+      MODULE/test_db_migration: test_db_migration.py
+      MODULE/test_django: test_django.py
+      MODULE/test_django_integrations: test_django_integrations.py
+      MODULE/test_expressjs: test_expressjs.py
+      MODULE/test_fastapi: test_fastapi.py
+      MODULE/test_go: test_go.py
+      MODULE/test_grafana: test_grafana.py
+      MODULE/test_http_proxy: test_http_proxy.py
+      MODULE/test_loki: test_loki.py
+      MODULE/test_minimal: test_minimal.py
+      MODULE/test_non_root_db_migration: test_non_root_db_migration.py
+      MODULE/test_non_root_loki: test_non_root_loki.py
+      MODULE/test_oauth: test_oauth.py
+      MODULE/test_openfga: test_openfga.py
+      MODULE/test_prometheus: test_prometheus.py
+      MODULE/test_proxy: test_proxy.py
+      MODULE/test_rabbitmq: test_rabbitmq.py
+      MODULE/test_s3: test_s3.py
+      MODULE/test_saml: test_saml.py
+      MODULE/test_smtp: test_smtp.py
+      MODULE/test_tracing: test_tracing.py
+      MODULE/test_workers: test_workers.py
+      MODULE/test_spring_saml: test_spring_saml.py
+      MODULE/test_redis: test_redis.py
+      MODULE/test_mongodb: test_mongodb.py
+      MODULE/test_mysql: test_mysql.py

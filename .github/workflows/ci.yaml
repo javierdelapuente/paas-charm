@@ -1,0 +1,15 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  integration-test:
+    uses: javierdelapuente/operator-ci-poc/.github/workflows/integration-test.yml@main
+    permissions:
+      contents: read
+      packages: write
+      actions: read
+    secrets: inherit
+    with:
+      working-directory: .
